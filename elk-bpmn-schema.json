@@ -1,0 +1,1086 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "elk-bpmn-extended-schema-v2",
+  "title": "ELK-BPMN Extended Schema v2.0",
+  "description": "完整覆盖 BPMN 2.0 规范的 ELK JSON 扩展格式，用于 AI 生成 → ELK 布局 → BPMN XML 转换",
+  "version": "2.0.0",
+  "type": "object",
+  "required": ["id", "children"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "根节点 ID，对应 BPMN definitions 元素"
+    },
+    "layoutOptions": {
+      "$ref": "#/definitions/layoutOptions"
+    },
+    "bpmn": {
+      "type": "object",
+      "description": "BPMN definitions 级别的元数据",
+      "properties": {
+        "targetNamespace": { "type": "string" },
+        "exporter": { "type": "string" },
+        "exporterVersion": { "type": "string" }
+      }
+    },
+    "children": {
+      "type": "array",
+      "description": "顶层元素：Collaboration 或 Process",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/collaboration" },
+          { "$ref": "#/definitions/process" }
+        ]
+      }
+    },
+    "messages": {
+      "type": "array",
+      "description": "全局消息定义",
+      "items": { "$ref": "#/definitions/messageDefinition" }
+    },
+    "signals": {
+      "type": "array",
+      "description": "全局信号定义",
+      "items": { "$ref": "#/definitions/signalDefinition" }
+    },
+    "errors": {
+      "type": "array",
+      "description": "全局错误定义",
+      "items": { "$ref": "#/definitions/errorDefinition" }
+    },
+    "escalations": {
+      "type": "array",
+      "description": "全局升级定义",
+      "items": { "$ref": "#/definitions/escalationDefinition" }
+    }
+  },
+
+  "definitions": {
+    
+    "layoutOptions": {
+      "type": "object",
+      "description": "ELK 布局配置选项",
+      "properties": {
+        "elk.algorithm": {
+          "type": "string",
+          "enum": ["layered", "stress", "mrtree", "radial", "force", "disco", "box", "fixed", "random"],
+          "default": "layered"
+        },
+        "elk.direction": {
+          "type": "string",
+          "enum": ["RIGHT", "DOWN", "LEFT", "UP"],
+          "default": "RIGHT"
+        },
+        "elk.spacing.nodeNode": { "type": "number", "default": 50 },
+        "elk.spacing.edgeNode": { "type": "number", "default": 30 },
+        "elk.spacing.edgeEdge": { "type": "number", "default": 20 },
+        "elk.layered.spacing.nodeNodeBetweenLayers": { "type": "number", "default": 80 },
+        "elk.layered.spacing.edgeNodeBetweenLayers": { "type": "number", "default": 30 },
+        "elk.layered.spacing.edgeEdgeBetweenLayers": { "type": "number", "default": 20 },
+        "elk.partitioning.activate": { "type": "boolean" },
+        "elk.hierarchyHandling": {
+          "type": "string",
+          "enum": ["INCLUDE_CHILDREN", "SEPARATE_CHILDREN"],
+          "default": "INCLUDE_CHILDREN"
+        },
+        "elk.layered.crossingMinimization.strategy": {
+          "type": "string",
+          "enum": ["LAYER_SWEEP", "INTERACTIVE"]
+        },
+        "elk.layered.nodePlacement.strategy": {
+          "type": "string",
+          "enum": ["SIMPLE", "BRANDES_KOEPF", "LINEAR_SEGMENTS", "NETWORK_SIMPLEX"]
+        },
+        "elk.edgeRouting": {
+          "type": "string",
+          "enum": ["POLYLINE", "ORTHOGONAL", "SPLINES"]
+        }
+      },
+      "additionalProperties": true
+    },
+
+    "messageDefinition": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+
+    "signalDefinition": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+
+    "errorDefinition": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "errorCode": { "type": "string" }
+      }
+    },
+
+    "escalationDefinition": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "escalationCode": { "type": "string" }
+      }
+    },
+
+    "collaboration": {
+      "type": "object",
+      "description": "BPMN Collaboration - 包含多个 Participant/Pool 的协作图",
+      "required": ["id", "bpmn", "children"],
+      "properties": {
+        "id": { "type": "string" },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "collaboration" },
+            "name": { "type": "string" },
+            "isClosed": { "type": "boolean", "default": false }
+          }
+        },
+        "layoutOptions": { "$ref": "#/definitions/layoutOptions" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/participant" }
+        },
+        "edges": {
+          "type": "array",
+          "description": "消息流（跨 Pool）",
+          "items": { "$ref": "#/definitions/messageFlow" }
+        }
+      }
+    },
+
+    "participant": {
+      "type": "object",
+      "description": "BPMN Participant (Pool) - 代表流程参与者",
+      "required": ["id", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "participant" },
+            "name": { "type": "string" },
+            "processRef": { 
+              "type": "string",
+              "description": "关联的 Process ID"
+            },
+            "isBlackBox": {
+              "type": "boolean",
+              "description": "是否为黑盒（不显示内部流程）",
+              "default": false
+            },
+            "participantMultiplicity": {
+              "type": "object",
+              "properties": {
+                "minimum": { "type": "integer", "default": 0 },
+                "maximum": { "type": "integer", "default": 1 }
+              }
+            }
+          }
+        },
+        "layoutOptions": { "$ref": "#/definitions/layoutOptions" },
+        "children": {
+          "type": "array",
+          "description": "泳道 (Lane) 或直接放置流程节点",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/lane" },
+              { "$ref": "#/definitions/flowNode" }
+            ]
+          }
+        },
+        "edges": {
+          "type": "array",
+          "description": "顺序流（Pool 内）",
+          "items": { "$ref": "#/definitions/sequenceFlow" }
+        }
+      }
+    },
+
+    "lane": {
+      "type": "object",
+      "description": "BPMN Lane (泳道)",
+      "required": ["id", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "lane" },
+            "name": { "type": "string" }
+          }
+        },
+        "layoutOptions": {
+          "type": "object",
+          "properties": {
+            "elk.partitioning.partition": {
+              "type": "integer",
+              "description": "泳道分区索引，从 0 开始"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "description": "泳道内的流程节点或子泳道",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/lane" },
+              { "$ref": "#/definitions/flowNode" }
+            ]
+          }
+        }
+      }
+    },
+
+    "process": {
+      "type": "object",
+      "description": "BPMN Process - 独立流程定义",
+      "required": ["id", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "process" },
+            "name": { "type": "string" },
+            "isExecutable": { "type": "boolean", "default": true },
+            "processType": {
+              "type": "string",
+              "enum": ["None", "Public", "Private"],
+              "default": "None"
+            },
+            "isClosed": { "type": "boolean", "default": false }
+          }
+        },
+        "layoutOptions": { "$ref": "#/definitions/layoutOptions" },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/lane" },
+              { "$ref": "#/definitions/flowNode" }
+            ]
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/definitions/sequenceFlow" },
+              { "$ref": "#/definitions/dataAssociation" }
+            ]
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "description": "制品：数据对象、文本注释、分组",
+          "items": { "$ref": "#/definitions/artifact" }
+        }
+      }
+    },
+
+    "flowNode": {
+      "type": "object",
+      "description": "BPMN Flow Node - 所有流程节点的基类",
+      "required": ["id", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "bpmn": {
+          "oneOf": [
+            { "$ref": "#/definitions/bpmnEvent" },
+            { "$ref": "#/definitions/bpmnTask" },
+            { "$ref": "#/definitions/bpmnGateway" },
+            { "$ref": "#/definitions/bpmnSubProcess" },
+            { "$ref": "#/definitions/bpmnCallActivity" }
+          ]
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "width": { "type": "number" },
+              "height": { "type": "number" }
+            }
+          }
+        },
+        "ports": {
+          "type": "array",
+          "description": "连接端口（用于边界事件定位）",
+          "items": { "$ref": "#/definitions/port" }
+        },
+        "children": {
+          "type": "array",
+          "description": "子元素（用于展开的子流程）",
+          "items": { "$ref": "#/definitions/flowNode" }
+        },
+        "edges": {
+          "type": "array",
+          "description": "子流程内的顺序流",
+          "items": { "$ref": "#/definitions/sequenceFlow" }
+        },
+        "boundaryEvents": {
+          "type": "array",
+          "description": "附加的边界事件",
+          "items": { "$ref": "#/definitions/boundaryEvent" }
+        }
+      }
+    },
+
+    "bpmnEvent": {
+      "type": "object",
+      "description": "BPMN Event - 所有事件类型",
+      "required": ["type", "eventDefinitionType"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "startEvent",
+            "endEvent",
+            "intermediateCatchEvent",
+            "intermediateThrowEvent",
+            "boundaryEvent"
+          ]
+        },
+        "eventDefinitionType": {
+          "type": "string",
+          "enum": [
+            "none",
+            "message",
+            "timer",
+            "error",
+            "escalation",
+            "cancel",
+            "compensation",
+            "conditional",
+            "link",
+            "signal",
+            "terminate",
+            "multiple",
+            "parallelMultiple"
+          ],
+          "description": "事件定义类型"
+        },
+        "name": { "type": "string" },
+        "isInterrupting": {
+          "type": "boolean",
+          "description": "是否中断（仅用于边界事件和事件子流程启动事件）",
+          "default": true
+        },
+        "parallelMultiple": {
+          "type": "boolean",
+          "description": "多事件是否为并行（AND）语义",
+          "default": false
+        },
+        "messageRef": {
+          "type": "string",
+          "description": "消息定义引用 ID"
+        },
+        "signalRef": {
+          "type": "string",
+          "description": "信号定义引用 ID"
+        },
+        "errorRef": {
+          "type": "string",
+          "description": "错误定义引用 ID"
+        },
+        "escalationRef": {
+          "type": "string",
+          "description": "升级定义引用 ID"
+        },
+        "timerEventDefinition": {
+          "$ref": "#/definitions/timerEventDefinition"
+        },
+        "conditionalEventDefinition": {
+          "$ref": "#/definitions/conditionalEventDefinition"
+        },
+        "linkEventDefinition": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "source": { "type": "array", "items": { "type": "string" } },
+            "target": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "boundaryEvent": {
+      "type": "object",
+      "description": "BPMN Boundary Event - 附加到活动上的边界事件",
+      "required": ["id", "bpmn", "attachedToRef"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number", "default": 36 },
+        "height": { "type": "number", "default": 36 },
+        "attachedToRef": {
+          "type": "string",
+          "description": "附加到的活动 ID"
+        },
+        "bpmn": {
+          "type": "object",
+          "required": ["type", "eventDefinitionType"],
+          "properties": {
+            "type": { "const": "boundaryEvent" },
+            "eventDefinitionType": {
+              "type": "string",
+              "enum": ["message", "timer", "error", "escalation", "cancel", "compensation", "conditional", "signal", "multiple", "parallelMultiple"]
+            },
+            "name": { "type": "string" },
+            "isInterrupting": { "type": "boolean", "default": true },
+            "cancelActivity": { "type": "boolean", "default": true },
+            "messageRef": { "type": "string" },
+            "signalRef": { "type": "string" },
+            "errorRef": { "type": "string" },
+            "escalationRef": { "type": "string" },
+            "timerEventDefinition": { "$ref": "#/definitions/timerEventDefinition" },
+            "conditionalEventDefinition": { "$ref": "#/definitions/conditionalEventDefinition" }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+        }
+      }
+    },
+
+    "timerEventDefinition": {
+      "type": "object",
+      "description": "定时器事件定义",
+      "properties": {
+        "timeDate": {
+          "type": "string",
+          "description": "固定时间点 (ISO 8601)"
+        },
+        "timeDuration": {
+          "type": "string",
+          "description": "持续时间 (ISO 8601 Duration, e.g., PT1H30M)"
+        },
+        "timeCycle": {
+          "type": "string",
+          "description": "循环周期 (ISO 8601 或 cron 表达式)"
+        }
+      }
+    },
+
+    "conditionalEventDefinition": {
+      "type": "object",
+      "description": "条件事件定义",
+      "properties": {
+        "condition": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "default": "tFormalExpression" },
+            "language": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "bpmnTask": {
+      "type": "object",
+      "description": "BPMN Task - 所有任务类型",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "task",
+            "userTask",
+            "serviceTask",
+            "scriptTask",
+            "businessRuleTask",
+            "sendTask",
+            "receiveTask",
+            "manualTask"
+          ]
+        },
+        "name": { "type": "string" },
+        "documentation": { "type": "string" },
+        "assignee": {
+          "type": "string",
+          "description": "用户任务执行人（表达式或用户 ID）"
+        },
+        "candidateUsers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "候选用户列表"
+        },
+        "candidateGroups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "候选组列表"
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "截止日期表达式"
+        },
+        "priority": {
+          "type": "string",
+          "description": "优先级表达式"
+        },
+        "formKey": {
+          "type": "string",
+          "description": "表单标识"
+        },
+        "implementation": {
+          "type": "string",
+          "description": "服务任务实现（Java 类、表达式、外部任务）"
+        },
+        "operationRef": {
+          "type": "string",
+          "description": "操作引用（用于服务任务）"
+        },
+        "script": {
+          "type": "object",
+          "description": "脚本任务配置",
+          "properties": {
+            "scriptFormat": { "type": "string", "description": "脚本语言，如 javascript, groovy" },
+            "script": { "type": "string", "description": "脚本内容" },
+            "resultVariable": { "type": "string", "description": "结果变量名" }
+          }
+        },
+        "messageRef": {
+          "type": "string",
+          "description": "发送/接收任务的消息引用"
+        },
+        "instantiate": {
+          "type": "boolean",
+          "description": "接收任务是否可实例化流程",
+          "default": false
+        },
+        "loopCharacteristics": {
+          "$ref": "#/definitions/loopCharacteristics"
+        },
+        "ioSpecification": {
+          "$ref": "#/definitions/ioSpecification"
+        }
+      }
+    },
+
+    "bpmnGateway": {
+      "type": "object",
+      "description": "BPMN Gateway - 所有网关类型",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "exclusiveGateway",
+            "parallelGateway",
+            "inclusiveGateway",
+            "eventBasedGateway",
+            "complexGateway"
+          ]
+        },
+        "name": { "type": "string" },
+        "gatewayDirection": {
+          "type": "string",
+          "enum": ["Unspecified", "Converging", "Diverging", "Mixed"],
+          "default": "Unspecified"
+        },
+        "default": {
+          "type": "string",
+          "description": "默认出口顺序流 ID（用于排他/包容网关）"
+        },
+        "instantiate": {
+          "type": "boolean",
+          "description": "事件网关是否可实例化",
+          "default": false
+        },
+        "eventGatewayType": {
+          "type": "string",
+          "enum": ["Exclusive", "Parallel"],
+          "description": "事件网关类型",
+          "default": "Exclusive"
+        },
+        "activationCondition": {
+          "type": "string",
+          "description": "复杂网关激活条件表达式"
+        }
+      }
+    },
+
+    "bpmnSubProcess": {
+      "type": "object",
+      "description": "BPMN SubProcess - 子流程类型",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["subProcess", "transaction", "adHocSubProcess", "eventSubProcess"]
+        },
+        "name": { "type": "string" },
+        "triggeredByEvent": {
+          "type": "boolean",
+          "description": "是否为事件子流程",
+          "default": false
+        },
+        "isExpanded": {
+          "type": "boolean",
+          "description": "是否展开显示",
+          "default": true
+        },
+        "loopCharacteristics": {
+          "$ref": "#/definitions/loopCharacteristics"
+        },
+        "adHocOrdering": {
+          "type": "string",
+          "enum": ["Parallel", "Sequential"],
+          "description": "Ad-hoc 子流程执行顺序"
+        },
+        "adHocCompletionCondition": {
+          "type": "string",
+          "description": "Ad-hoc 子流程完成条件"
+        },
+        "cancelRemainingInstances": {
+          "type": "boolean",
+          "description": "Ad-hoc 完成时是否取消剩余实例",
+          "default": true
+        },
+        "transactionProtocol": {
+          "type": "string",
+          "description": "事务协议（用于 transaction 类型）"
+        }
+      }
+    },
+
+    "bpmnCallActivity": {
+      "type": "object",
+      "description": "BPMN Call Activity - 调用活动",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "callActivity" },
+        "name": { "type": "string" },
+        "calledElement": {
+          "type": "string",
+          "description": "被调用的流程/全局任务 ID"
+        },
+        "calledElementBinding": {
+          "type": "string",
+          "enum": ["latest", "deployment", "version"],
+          "default": "latest"
+        },
+        "calledElementVersion": {
+          "type": "string",
+          "description": "指定版本号（当 binding 为 version 时）"
+        },
+        "inheritBusinessKey": {
+          "type": "boolean",
+          "description": "是否继承业务键",
+          "default": false
+        },
+        "loopCharacteristics": {
+          "$ref": "#/definitions/loopCharacteristics"
+        },
+        "inMappings": {
+          "type": "array",
+          "description": "输入参数映射",
+          "items": { "$ref": "#/definitions/parameterMapping" }
+        },
+        "outMappings": {
+          "type": "array",
+          "description": "输出参数映射",
+          "items": { "$ref": "#/definitions/parameterMapping" }
+        }
+      }
+    },
+
+    "loopCharacteristics": {
+      "type": "object",
+      "description": "循环/多实例特性",
+      "properties": {
+        "loopType": {
+          "type": "string",
+          "enum": ["standard", "multiInstance"],
+          "default": "multiInstance"
+        },
+        "isSequential": {
+          "type": "boolean",
+          "description": "多实例是否顺序执行",
+          "default": false
+        },
+        "loopCardinality": {
+          "type": "string",
+          "description": "循环次数表达式"
+        },
+        "loopDataInputRef": {
+          "type": "string",
+          "description": "输入数据集合引用"
+        },
+        "loopDataOutputRef": {
+          "type": "string",
+          "description": "输出数据集合引用"
+        },
+        "inputDataItem": {
+          "type": "string",
+          "description": "输入数据项变量名"
+        },
+        "outputDataItem": {
+          "type": "string",
+          "description": "输出数据项变量名"
+        },
+        "completionCondition": {
+          "type": "string",
+          "description": "完成条件表达式"
+        },
+        "loopCondition": {
+          "type": "string",
+          "description": "标准循环条件表达式"
+        },
+        "loopMaximum": {
+          "type": "integer",
+          "description": "标准循环最大次数"
+        },
+        "testBefore": {
+          "type": "boolean",
+          "description": "标准循环是否先检查条件",
+          "default": false
+        }
+      }
+    },
+
+    "ioSpecification": {
+      "type": "object",
+      "description": "输入输出规范",
+      "properties": {
+        "dataInputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/dataInput" }
+        },
+        "dataOutputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/dataOutput" }
+        },
+        "inputSets": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/inputSet" }
+        },
+        "outputSets": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/outputSet" }
+        }
+      }
+    },
+
+    "dataInput": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "itemSubjectRef": { "type": "string" },
+        "isCollection": { "type": "boolean", "default": false }
+      }
+    },
+
+    "dataOutput": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "itemSubjectRef": { "type": "string" },
+        "isCollection": { "type": "boolean", "default": false }
+      }
+    },
+
+    "inputSet": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "dataInputRefs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "outputSet": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "dataOutputRefs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+
+    "parameterMapping": {
+      "type": "object",
+      "description": "参数映射（用于 Call Activity）",
+      "properties": {
+        "source": { "type": "string" },
+        "sourceExpression": { "type": "string" },
+        "target": { "type": "string" }
+      }
+    },
+
+    "artifact": {
+      "type": "object",
+      "description": "BPMN Artifact - 制品类型",
+      "required": ["id", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "bpmn": {
+          "oneOf": [
+            { "$ref": "#/definitions/dataObjectArtifact" },
+            { "$ref": "#/definitions/dataStoreArtifact" },
+            { "$ref": "#/definitions/textAnnotationArtifact" },
+            { "$ref": "#/definitions/groupArtifact" }
+          ]
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+        }
+      }
+    },
+
+    "dataObjectArtifact": {
+      "type": "object",
+      "description": "数据对象",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["dataObject", "dataObjectReference", "dataInput", "dataOutput"]
+        },
+        "name": { "type": "string" },
+        "dataObjectRef": { "type": "string" },
+        "itemSubjectRef": { "type": "string" },
+        "isCollection": { "type": "boolean", "default": false },
+        "dataState": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "dataStoreArtifact": {
+      "type": "object",
+      "description": "数据存储",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "dataStoreReference" },
+        "name": { "type": "string" },
+        "dataStoreRef": { "type": "string" },
+        "capacity": { "type": "integer" },
+        "isUnlimited": { "type": "boolean", "default": true }
+      }
+    },
+
+    "textAnnotationArtifact": {
+      "type": "object",
+      "description": "文本注释",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "textAnnotation" },
+        "text": { "type": "string" },
+        "textFormat": { "type": "string", "default": "text/plain" }
+      }
+    },
+
+    "groupArtifact": {
+      "type": "object",
+      "description": "分组",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "group" },
+        "name": { "type": "string" },
+        "categoryValueRef": { "type": "string" }
+      }
+    },
+
+    "port": {
+      "type": "object",
+      "description": "ELK 端口（用于边界事件定位）",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "width": { "type": "number", "default": 10 },
+        "height": { "type": "number", "default": 10 },
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+
+    "sequenceFlow": {
+      "type": "object",
+      "description": "BPMN Sequence Flow - 顺序流",
+      "required": ["id", "sources", "targets", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "sequenceFlow" },
+            "name": { "type": "string" },
+            "conditionExpression": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "default": "tFormalExpression" },
+                "language": { "type": "string" },
+                "body": { "type": "string" }
+              }
+            },
+            "isDefault": {
+              "type": "boolean",
+              "description": "是否为默认流",
+              "default": false
+            }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+        }
+      }
+    },
+
+    "messageFlow": {
+      "type": "object",
+      "description": "BPMN Message Flow - 消息流（跨 Pool）",
+      "required": ["id", "sources", "targets", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "messageFlow" },
+            "name": { "type": "string" },
+            "messageRef": { "type": "string" }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+        }
+      }
+    },
+
+    "dataAssociation": {
+      "type": "object",
+      "description": "BPMN Data Association - 数据关联",
+      "required": ["id", "sources", "targets", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["dataInputAssociation", "dataOutputAssociation"]
+            },
+            "transformation": {
+              "type": "object",
+              "properties": {
+                "body": { "type": "string" }
+              }
+            },
+            "assignment": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": { "type": "string" },
+                  "to": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "association": {
+      "type": "object",
+      "description": "BPMN Association - 关联线（连接制品）",
+      "required": ["id", "sources", "targets", "bpmn"],
+      "properties": {
+        "id": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "bpmn": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "association" },
+            "associationDirection": {
+              "type": "string",
+              "enum": ["None", "One", "Both"],
+              "default": "None"
+            }
+          }
+        }
+      }
+    }
+  }
+}

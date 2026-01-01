@@ -1,0 +1,140 @@
+{
+  "name": "ELK-BPMN 测试数据集",
+  "version": "1.0.0",
+  "description": "覆盖 BPMN 2.0 所有元素类型的测试 JSON 文件",
+  "files": [
+    {
+      "file": "01-all-events.json",
+      "name": "所有事件类型",
+      "coverage": [
+        "startEvent: none, message, timer, signal, conditional, multiple, parallelMultiple",
+        "intermediateCatchEvent: message, timer, signal, conditional, link",
+        "intermediateThrowEvent: none, message, signal, escalation, compensation, link",
+        "endEvent: none, message, error, escalation, cancel, compensation, signal, terminate, multiple"
+      ]
+    },
+    {
+      "file": "02-all-tasks.json",
+      "name": "所有任务类型",
+      "coverage": [
+        "task (通用任务)",
+        "userTask (用户任务) - 含 assignee, candidateUsers, candidateGroups, dueDate, priority, formKey",
+        "serviceTask (服务任务) - 含 implementation",
+        "scriptTask (脚本任务) - 含 script.scriptFormat, script.script, script.resultVariable",
+        "businessRuleTask (业务规则任务)",
+        "sendTask (发送任务) - 含 messageRef",
+        "receiveTask (接收任务) - 含 messageRef, instantiate",
+        "manualTask (手动任务)"
+      ]
+    },
+    {
+      "file": "03-all-gateways.json",
+      "name": "所有网关类型",
+      "coverage": [
+        "exclusiveGateway (排他网关) - Diverging/Converging, default flow",
+        "parallelGateway (并行网关) - Diverging/Converging",
+        "inclusiveGateway (包容网关) - Diverging/Converging, default flow",
+        "eventBasedGateway (事件网关) - eventGatewayType, instantiate",
+        "complexGateway (复杂网关) - activationCondition"
+      ]
+    },
+    {
+      "file": "04-subprocesses.json",
+      "name": "所有子流程类型",
+      "coverage": [
+        "subProcess (嵌入式子流程) - isExpanded: true/false",
+        "transaction (事务子流程) - transactionProtocol, cancelBoundary",
+        "adHocSubProcess (临时子流程) - adHocOrdering, adHocCompletionCondition, cancelRemainingInstances",
+        "eventSubProcess (事件子流程) - triggeredByEvent, 中断/非中断启动事件"
+      ]
+    },
+    {
+      "file": "05-boundary-events.json",
+      "name": "所有边界事件类型",
+      "coverage": [
+        "boundaryEvent timer - isInterrupting: true/false",
+        "boundaryEvent message - isInterrupting: true/false",
+        "boundaryEvent error - 仅中断",
+        "boundaryEvent signal - isInterrupting: true/false",
+        "boundaryEvent escalation - isInterrupting: true/false",
+        "boundaryEvent conditional - isInterrupting: true/false",
+        "boundaryEvent compensation",
+        "boundaryEvent multiple",
+        "boundaryEvent parallelMultiple"
+      ]
+    },
+    {
+      "file": "06-artifacts.json",
+      "name": "所有制品类型",
+      "coverage": [
+        "dataObject - isCollection, dataState",
+        "dataObjectReference",
+        "dataInput",
+        "dataOutput",
+        "dataStoreReference - capacity, isUnlimited",
+        "textAnnotation - text, textFormat",
+        "group - categoryValueRef",
+        "dataInputAssociation",
+        "dataOutputAssociation - transformation",
+        "association - associationDirection: None/One/Both"
+      ]
+    },
+    {
+      "file": "07-loop-multiinstance.json",
+      "name": "循环与多实例",
+      "coverage": [
+        "标准循环 - loopCondition, loopMaximum, testBefore",
+        "并行多实例 - isSequential: false, loopCardinality, loopDataInputRef, inputDataItem, completionCondition",
+        "顺序多实例 - isSequential: true, loopDataOutputRef, outputDataItem",
+        "子流程多实例"
+      ]
+    },
+    {
+      "file": "08-collaboration.json",
+      "name": "协作图",
+      "coverage": [
+        "collaboration - isClosed",
+        "participant (Pool) - isBlackBox, participantMultiplicity",
+        "lane - 单层泳道",
+        "嵌套泳道",
+        "messageFlow - 跨池消息流"
+      ]
+    },
+    {
+      "file": "09-call-activity.json",
+      "name": "调用活动",
+      "coverage": [
+        "callActivity - calledElement, calledElementBinding (latest/version/deployment)",
+        "calledElementVersion",
+        "inheritBusinessKey",
+        "inMappings - source, sourceExpression, target",
+        "outMappings",
+        "callActivity + loopCharacteristics (多实例调用)"
+      ]
+    },
+    {
+      "file": "10-simple-process.json",
+      "name": "简单流程",
+      "coverage": [
+        "process - isExecutable, processType, isClosed",
+        "基础顺序流"
+      ]
+    }
+  ],
+  "bpmnElementsCovered": {
+    "events": {
+      "startEvent": ["none", "message", "timer", "signal", "conditional", "multiple", "parallelMultiple"],
+      "endEvent": ["none", "message", "error", "escalation", "cancel", "compensation", "signal", "terminate", "multiple"],
+      "intermediateCatchEvent": ["message", "timer", "signal", "conditional", "link"],
+      "intermediateThrowEvent": ["none", "message", "signal", "escalation", "compensation", "link"],
+      "boundaryEvent": ["timer", "message", "error", "signal", "escalation", "conditional", "compensation", "cancel", "multiple", "parallelMultiple"]
+    },
+    "tasks": ["task", "userTask", "serviceTask", "scriptTask", "businessRuleTask", "sendTask", "receiveTask", "manualTask"],
+    "gateways": ["exclusiveGateway", "parallelGateway", "inclusiveGateway", "eventBasedGateway", "complexGateway"],
+    "subprocesses": ["subProcess", "transaction", "adHocSubProcess", "eventSubProcess"],
+    "activities": ["callActivity"],
+    "artifacts": ["dataObject", "dataObjectReference", "dataInput", "dataOutput", "dataStoreReference", "textAnnotation", "group"],
+    "flows": ["sequenceFlow", "messageFlow", "dataInputAssociation", "dataOutputAssociation", "association"],
+    "containers": ["collaboration", "participant", "lane", "process"]
+  }
+}

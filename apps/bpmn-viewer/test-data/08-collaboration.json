@@ -1,0 +1,346 @@
+{
+  "id": "definitions_collaboration",
+  "bpmn": {
+    "targetNamespace": "http://example.com/test-collaboration",
+    "exporter": "ELK-BPMN Test Generator",
+    "exporterVersion": "1.0"
+  },
+  "layoutOptions": {
+    "elk.algorithm": "layered",
+    "elk.direction": "RIGHT",
+    "elk.spacing.nodeNode": 50,
+    "elk.layered.spacing.nodeNodeBetweenLayers": 100
+  },
+  "messages": [
+    { "id": "msg_order", "name": "订单消息" },
+    { "id": "msg_confirm", "name": "确认消息" },
+    { "id": "msg_payment", "name": "支付消息" },
+    { "id": "msg_ship", "name": "发货消息" },
+    { "id": "msg_receipt", "name": "回执消息" }
+  ],
+  "children": [
+    {
+      "id": "collaboration_1",
+      "bpmn": {
+        "type": "collaboration",
+        "name": "多池协作流程测试",
+        "isClosed": false
+      },
+      "layoutOptions": {
+        "elk.algorithm": "layered",
+        "elk.direction": "RIGHT"
+      },
+      "children": [
+        {
+          "id": "pool_customer",
+          "bpmn": {
+            "type": "participant",
+            "name": "客户",
+            "processRef": "process_customer",
+            "isBlackBox": true
+          }
+        },
+        {
+          "id": "pool_sales",
+          "bpmn": {
+            "type": "participant",
+            "name": "销售部门",
+            "processRef": "process_sales",
+            "participantMultiplicity": {
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "layoutOptions": {
+            "elk.partitioning.activate": true,
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT"
+          },
+          "children": [
+            {
+              "id": "lane_sales_rep",
+              "bpmn": { "type": "lane", "name": "销售代表" },
+              "layoutOptions": { "elk.partitioning.partition": 0 },
+              "children": [
+                {
+                  "id": "start_sales",
+                  "width": 36, "height": 36,
+                  "bpmn": {
+                    "type": "startEvent",
+                    "eventDefinitionType": "message",
+                    "name": "收到订单",
+                    "messageRef": "msg_order"
+                  },
+                  "labels": [{ "text": "收到订单" }]
+                },
+                {
+                  "id": "task_validate",
+                  "width": 100, "height": 80,
+                  "bpmn": { "type": "serviceTask", "name": "验证订单" },
+                  "labels": [{ "text": "验证订单" }]
+                },
+                {
+                  "id": "throw_confirm",
+                  "width": 36, "height": 36,
+                  "bpmn": {
+                    "type": "intermediateThrowEvent",
+                    "eventDefinitionType": "message",
+                    "name": "发送确认",
+                    "messageRef": "msg_confirm"
+                  },
+                  "labels": [{ "text": "发送确认" }]
+                }
+              ]
+            },
+            {
+              "id": "lane_sales_manager",
+              "bpmn": { "type": "lane", "name": "销售经理" },
+              "layoutOptions": { "elk.partitioning.partition": 1 },
+              "children": [
+                {
+                  "id": "task_approve",
+                  "width": 100, "height": 80,
+                  "bpmn": { "type": "userTask", "name": "审批订单" },
+                  "labels": [{ "text": "审批订单" }]
+                },
+                {
+                  "id": "gateway_approved",
+                  "width": 50, "height": 50,
+                  "bpmn": {
+                    "type": "exclusiveGateway",
+                    "name": "是否通过?",
+                    "gatewayDirection": "Diverging"
+                  },
+                  "labels": [{ "text": "是否通过?" }]
+                },
+                {
+                  "id": "throw_payment",
+                  "width": 36, "height": 36,
+                  "bpmn": {
+                    "type": "intermediateThrowEvent",
+                    "eventDefinitionType": "message",
+                    "name": "请求支付",
+                    "messageRef": "msg_payment"
+                  },
+                  "labels": [{ "text": "请求支付" }]
+                },
+                {
+                  "id": "end_rejected",
+                  "width": 36, "height": 36,
+                  "bpmn": {
+                    "type": "endEvent",
+                    "eventDefinitionType": "none",
+                    "name": "订单拒绝"
+                  },
+                  "labels": [{ "text": "拒绝" }]
+                }
+              ]
+            },
+            {
+              "id": "lane_nested_parent",
+              "bpmn": { "type": "lane", "name": "后续处理" },
+              "layoutOptions": { "elk.partitioning.partition": 2 },
+              "children": [
+                {
+                  "id": "lane_nested_shipping",
+                  "bpmn": { "type": "lane", "name": "发货组" },
+                  "children": [
+                    {
+                      "id": "catch_payment_ok",
+                      "width": 36, "height": 36,
+                      "bpmn": {
+                        "type": "intermediateCatchEvent",
+                        "eventDefinitionType": "message",
+                        "name": "支付完成",
+                        "messageRef": "msg_receipt"
+                      },
+                      "labels": [{ "text": "支付完成" }]
+                    },
+                    {
+                      "id": "task_ship",
+                      "width": 100, "height": 80,
+                      "bpmn": { "type": "serviceTask", "name": "安排发货" },
+                      "labels": [{ "text": "安排发货" }]
+                    }
+                  ]
+                },
+                {
+                  "id": "lane_nested_complete",
+                  "bpmn": { "type": "lane", "name": "完成组" },
+                  "children": [
+                    {
+                      "id": "task_complete",
+                      "width": 100, "height": 80,
+                      "bpmn": { "type": "task", "name": "完成订单" },
+                      "labels": [{ "text": "完成订单" }]
+                    },
+                    {
+                      "id": "end_success",
+                      "width": 36, "height": 36,
+                      "bpmn": {
+                        "type": "endEvent",
+                        "eventDefinitionType": "none",
+                        "name": "订单完成"
+                      },
+                      "labels": [{ "text": "完成" }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "edges": [
+            { "id": "flow_s1", "sources": ["start_sales"], "targets": ["task_validate"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s2", "sources": ["task_validate"], "targets": ["throw_confirm"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s3", "sources": ["throw_confirm"], "targets": ["task_approve"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s4", "sources": ["task_approve"], "targets": ["gateway_approved"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s5_yes", "sources": ["gateway_approved"], "targets": ["throw_payment"], "bpmn": { "type": "sequenceFlow", "name": "通过", "conditionExpression": { "body": "${approved}" } }, "labels": [{ "text": "通过" }] },
+            { "id": "flow_s5_no", "sources": ["gateway_approved"], "targets": ["end_rejected"], "bpmn": { "type": "sequenceFlow", "name": "拒绝", "conditionExpression": { "body": "${!approved}" } }, "labels": [{ "text": "拒绝" }] },
+            { "id": "flow_s6", "sources": ["throw_payment"], "targets": ["catch_payment_ok"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s7", "sources": ["catch_payment_ok"], "targets": ["task_ship"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s8", "sources": ["task_ship"], "targets": ["task_complete"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_s9", "sources": ["task_complete"], "targets": ["end_success"], "bpmn": { "type": "sequenceFlow" } }
+          ]
+        },
+        {
+          "id": "pool_finance",
+          "bpmn": {
+            "type": "participant",
+            "name": "财务部门",
+            "processRef": "process_finance"
+          },
+          "children": [
+            {
+              "id": "start_finance",
+              "width": 36, "height": 36,
+              "bpmn": {
+                "type": "startEvent",
+                "eventDefinitionType": "message",
+                "name": "收到支付请求",
+                "messageRef": "msg_payment"
+              },
+              "labels": [{ "text": "收到支付请求" }]
+            },
+            {
+              "id": "task_process_payment",
+              "width": 100, "height": 80,
+              "bpmn": { "type": "serviceTask", "name": "处理支付" },
+              "labels": [{ "text": "处理支付" }]
+            },
+            {
+              "id": "throw_receipt",
+              "width": 36, "height": 36,
+              "bpmn": {
+                "type": "intermediateThrowEvent",
+                "eventDefinitionType": "message",
+                "name": "发送回执",
+                "messageRef": "msg_receipt"
+              },
+              "labels": [{ "text": "发送回执" }]
+            },
+            {
+              "id": "end_finance",
+              "width": 36, "height": 36,
+              "bpmn": {
+                "type": "endEvent",
+                "eventDefinitionType": "none",
+                "name": "结束"
+              },
+              "labels": [{ "text": "结束" }]
+            }
+          ],
+          "edges": [
+            { "id": "flow_f1", "sources": ["start_finance"], "targets": ["task_process_payment"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_f2", "sources": ["task_process_payment"], "targets": ["throw_receipt"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_f3", "sources": ["throw_receipt"], "targets": ["end_finance"], "bpmn": { "type": "sequenceFlow" } }
+          ]
+        },
+        {
+          "id": "pool_warehouse",
+          "bpmn": {
+            "type": "participant",
+            "name": "仓库",
+            "processRef": "process_warehouse"
+          },
+          "children": [
+            {
+              "id": "start_warehouse",
+              "width": 36, "height": 36,
+              "bpmn": {
+                "type": "startEvent",
+                "eventDefinitionType": "message",
+                "name": "收到发货请求",
+                "messageRef": "msg_ship"
+              },
+              "labels": [{ "text": "收到发货请求" }]
+            },
+            {
+              "id": "task_pick_pack",
+              "width": 100, "height": 80,
+              "bpmn": { "type": "manualTask", "name": "拣货打包" },
+              "labels": [{ "text": "拣货打包" }]
+            },
+            {
+              "id": "task_deliver",
+              "width": 100, "height": 80,
+              "bpmn": { "type": "manualTask", "name": "配送" },
+              "labels": [{ "text": "配送" }]
+            },
+            {
+              "id": "end_warehouse",
+              "width": 36, "height": 36,
+              "bpmn": {
+                "type": "endEvent",
+                "eventDefinitionType": "none",
+                "name": "结束"
+              },
+              "labels": [{ "text": "结束" }]
+            }
+          ],
+          "edges": [
+            { "id": "flow_w1", "sources": ["start_warehouse"], "targets": ["task_pick_pack"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_w2", "sources": ["task_pick_pack"], "targets": ["task_deliver"], "bpmn": { "type": "sequenceFlow" } },
+            { "id": "flow_w3", "sources": ["task_deliver"], "targets": ["end_warehouse"], "bpmn": { "type": "sequenceFlow" } }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "msgflow_order",
+          "sources": ["pool_customer"],
+          "targets": ["start_sales"],
+          "bpmn": { "type": "messageFlow", "name": "提交订单", "messageRef": "msg_order" },
+          "labels": [{ "text": "提交订单" }]
+        },
+        {
+          "id": "msgflow_confirm",
+          "sources": ["throw_confirm"],
+          "targets": ["pool_customer"],
+          "bpmn": { "type": "messageFlow", "name": "订单确认", "messageRef": "msg_confirm" },
+          "labels": [{ "text": "订单确认" }]
+        },
+        {
+          "id": "msgflow_payment_req",
+          "sources": ["throw_payment"],
+          "targets": ["start_finance"],
+          "bpmn": { "type": "messageFlow", "name": "支付请求", "messageRef": "msg_payment" },
+          "labels": [{ "text": "支付请求" }]
+        },
+        {
+          "id": "msgflow_receipt",
+          "sources": ["throw_receipt"],
+          "targets": ["catch_payment_ok"],
+          "bpmn": { "type": "messageFlow", "name": "支付回执", "messageRef": "msg_receipt" },
+          "labels": [{ "text": "支付回执" }]
+        },
+        {
+          "id": "msgflow_ship",
+          "sources": ["task_ship"],
+          "targets": ["start_warehouse"],
+          "bpmn": { "type": "messageFlow", "name": "发货请求", "messageRef": "msg_ship" },
+          "labels": [{ "text": "发货请求" }]
+        }
+      ]
+    }
+  ]
+}

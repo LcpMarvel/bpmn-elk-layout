@@ -1,0 +1,95 @@
+{
+  "id": "definitions_boundary_error",
+  "bpmn": {
+    "targetNamespace": "http://example.com/test-boundary-error",
+    "exporter": "ELK-BPMN Test Generator",
+    "exporterVersion": "1.0"
+  },
+  "layoutOptions": {
+    "elk.algorithm": "layered",
+    "elk.direction": "RIGHT",
+    "elk.spacing.nodeNode": 50,
+    "elk.layered.spacing.nodeNodeBetweenLayers": 80
+  },
+  "errors": [
+    { "id": "err_business", "name": "业务错误", "errorCode": "BIZ_001" }
+  ],
+  "children": [
+    {
+      "id": "process_boundary_error",
+      "bpmn": {
+        "type": "process",
+        "name": "错误边界事件测试",
+        "isExecutable": true
+      },
+      "children": [
+        {
+          "id": "start_1",
+          "width": 36, "height": 36,
+          "bpmn": {
+            "type": "startEvent",
+            "eventDefinitionType": "none",
+            "name": "开始"
+          },
+          "labels": [{ "text": "开始" }]
+        },
+        {
+          "id": "task_risky",
+          "width": 100, "height": 80,
+          "bpmn": {
+            "type": "serviceTask",
+            "name": "调用外部服务"
+          },
+          "labels": [{ "text": "调用外部服务" }],
+          "boundaryEvents": [
+            {
+              "id": "boundary_error",
+              "width": 36, "height": 36,
+              "attachedToRef": "task_risky",
+              "bpmn": {
+                "type": "boundaryEvent",
+                "eventDefinitionType": "error",
+                "name": "捕获错误",
+                "isInterrupting": true,
+                "errorRef": "err_business"
+              },
+              "labels": [{ "text": "业务错误" }]
+            }
+          ]
+        },
+        {
+          "id": "task_error_handler",
+          "width": 100, "height": 80,
+          "bpmn": { "type": "task", "name": "错误处理" },
+          "labels": [{ "text": "错误处理" }]
+        },
+        {
+          "id": "end_success",
+          "width": 36, "height": 36,
+          "bpmn": {
+            "type": "endEvent",
+            "eventDefinitionType": "none",
+            "name": "成功"
+          },
+          "labels": [{ "text": "成功" }]
+        },
+        {
+          "id": "end_error",
+          "width": 36, "height": 36,
+          "bpmn": {
+            "type": "endEvent",
+            "eventDefinitionType": "error",
+            "name": "失败"
+          },
+          "labels": [{ "text": "失败" }]
+        }
+      ],
+      "edges": [
+        { "id": "flow_1", "sources": ["start_1"], "targets": ["task_risky"], "bpmn": { "type": "sequenceFlow" } },
+        { "id": "flow_2", "sources": ["task_risky"], "targets": ["end_success"], "bpmn": { "type": "sequenceFlow" } },
+        { "id": "flow_error", "sources": ["boundary_error"], "targets": ["task_error_handler"], "bpmn": { "type": "sequenceFlow" } },
+        { "id": "flow_error_end", "sources": ["task_error_handler"], "targets": ["end_error"], "bpmn": { "type": "sequenceFlow" } }
+      ]
+    }
+  ]
+}

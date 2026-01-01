@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_collab_lanes" targetNamespace="http://example.com/test-collab-lanes" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration_1" name="泳道示例">
+    <bpmn:participant id="pool_company" name="公司" processRef="process_company" />
+  </bpmn:collaboration>
+  <bpmn:process id="process_company" name="公司" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="lane_sales" name="销售部">
+        <bpmn:flowNodeRef>start_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_quote</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_finance" name="财务部">
+        <bpmn:flowNodeRef>task_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_1" name="收到需求">
+      <bpmn:outgoing>flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="task_quote" name="制作报价">
+      <bpmn:incoming>flow_1</bpmn:incoming>
+      <bpmn:outgoing>flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="task_review" name="审核报价">
+      <bpmn:incoming>flow_2</bpmn:incoming>
+      <bpmn:outgoing>flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="end_1" name="完成">
+      <bpmn:incoming>flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_1" sourceRef="start_1" targetRef="task_quote" />
+    <bpmn:sequenceFlow id="flow_2" sourceRef="task_quote" targetRef="task_review" />
+    <bpmn:sequenceFlow id="flow_3" sourceRef="task_review" targetRef="end_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_collab_lanes" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_collab_lanes" bpmnElement="collaboration_1">
+      <bpmndi:BPMNShape id="collaboration_1_di" bpmnElement="collaboration_1">
+        <dc:Bounds x="12" y="12" width="462" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="pool_company_di" bpmnElement="pool_company" isHorizontal="true">
+        <dc:Bounds x="0" y="0" width="462" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_sales_di" bpmnElement="lane_sales" isHorizontal="true">
+        <dc:Bounds x="30" y="0" width="432" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
+        <dc:Bounds x="60" y="62" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="50" y="102" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_quote_di" bpmnElement="task_quote">
+        <dc:Bounds x="136" y="40" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="136" y="40" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_finance_di" bpmnElement="lane_finance" isHorizontal="true">
+        <dc:Bounds x="30" y="160" width="432" height="160" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_review_di" bpmnElement="task_review">
+        <dc:Bounds x="256" y="200" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="256" y="200" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_1_di" bpmnElement="end_1">
+        <dc:Bounds x="376" y="222" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="262" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
+        <di:waypoint x="96" y="80" />
+        <di:waypoint x="136" y="80" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_2_di" bpmnElement="flow_2">
+        <di:waypoint x="236" y="80" />
+        <di:waypoint x="246" y="80" />
+        <di:waypoint x="246" y="240" />
+        <di:waypoint x="256" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_3_di" bpmnElement="flow_3">
+        <di:waypoint x="356" y="240" />
+        <di:waypoint x="376" y="240" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
