@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_call_activity_boundary" targetNamespace="http://example.com/test-call-activity-boundary" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
+  <bpmn:signal id="sig_cancel" name="取消信号" />
+  <bpmn:error id="err_call_failure" name="调用失败" errorCode="CALL_ERR_001" />
+  <bpmn:error id="err_validation" name="验证错误" errorCode="VAL_ERR_001" />
+  <bpmn:escalation id="esc_timeout" name="超时升级" escalationCode="ESC_TIMEOUT" />
+  <bpmn:process id="process_call_activity_boundary" name="调用活动边界事件测试" isExecutable="true">
+    <bpmn:startEvent id="start_1" name="开始">
+      <bpmn:outgoing>flow_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="task_prepare" name="准备数据">
+      <bpmn:incoming>flow_start</bpmn:incoming>
+      <bpmn:outgoing>flow_to_call_order</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="call_activity_order" name="调用订单处理" calledElement="process_order_handling">
+      <bpmn:incoming>flow_to_call_order</bpmn:incoming>
+      <bpmn:outgoing>flow_call_order_to_payment</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="boundary_error_call_order" name="订单错误" attachedToRef="call_activity_order">
+      <bpmn:outgoing>flow_order_error</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="err_call_failure" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="boundary_timer_call_order" name="订单超时" attachedToRef="call_activity_order">
+      <bpmn:outgoing>flow_order_timeout</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="task_order_error_handler" name="订单错误处理">
+      <bpmn:incoming>flow_order_error</bpmn:incoming>
+      <bpmn:outgoing>flow_order_error_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_order_timeout_handler" name="订单超时处理">
+      <bpmn:incoming>flow_order_timeout</bpmn:incoming>
+      <bpmn:outgoing>flow_order_timeout_to_merge</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="call_activity_payment" name="调用支付处理" calledElement="process_payment_handling">
+      <bpmn:incoming>flow_call_order_to_payment</bpmn:incoming>
+      <bpmn:outgoing>flow_call_payment_to_shipping</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="boundary_error_call_payment" name="支付错误" attachedToRef="call_activity_payment">
+      <bpmn:outgoing>flow_payment_error</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="err_call_failure" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="boundary_escalation_call_payment" name="支付升级" cancelActivity="false" attachedToRef="call_activity_payment">
+      <bpmn:outgoing>flow_payment_escalation</bpmn:outgoing>
+      <bpmn:escalationEventDefinition escalationRef="esc_timeout" />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="boundary_signal_call_payment" name="取消支付" attachedToRef="call_activity_payment">
+      <bpmn:outgoing>flow_payment_cancel</bpmn:outgoing>
+      <bpmn:signalEventDefinition signalRef="sig_cancel" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="task_payment_error_handler" name="支付错误处理">
+      <bpmn:incoming>flow_payment_error</bpmn:incoming>
+      <bpmn:outgoing>flow_payment_error_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="task_escalation_handler" name="升级处理">
+      <bpmn:incoming>flow_payment_escalation</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="task_cancel_handler" name="取消处理">
+      <bpmn:incoming>flow_payment_cancel</bpmn:incoming>
+      <bpmn:outgoing>flow_cancel_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="call_activity_shipping" name="调用发货处理" calledElement="process_shipping_handling">
+      <bpmn:incoming>flow_call_payment_to_shipping</bpmn:incoming>
+      <bpmn:outgoing>flow_call_shipping_to_merge</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="boundary_message_call_shipping" name="发货消息" cancelActivity="false" attachedToRef="call_activity_shipping">
+      <bpmn:outgoing>flow_shipping_status</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="boundary_conditional_call_shipping" name="库存不足" attachedToRef="call_activity_shipping">
+      <bpmn:outgoing>flow_inventory</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition>
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${inventory &lt; requiredQuantity}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="task_shipping_status_handler" name="更新发货状态">
+      <bpmn:incoming>flow_shipping_status</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_inventory_handler" name="库存不足处理">
+      <bpmn:incoming>flow_inventory</bpmn:incoming>
+      <bpmn:outgoing>flow_inventory_to_merge</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gateway_merge" name="合并" gatewayDirection="Converging">
+      <bpmn:incoming>flow_call_shipping_to_merge</bpmn:incoming>
+      <bpmn:incoming>flow_order_timeout_to_merge</bpmn:incoming>
+      <bpmn:incoming>flow_inventory_to_merge</bpmn:incoming>
+      <bpmn:outgoing>flow_merge_to_finalize</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="task_finalize" name="最终处理">
+      <bpmn:incoming>flow_merge_to_finalize</bpmn:incoming>
+      <bpmn:outgoing>flow_finalize_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="end_success" name="成功结束">
+      <bpmn:incoming>flow_finalize_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_error" name="错误结束">
+      <bpmn:incoming>flow_order_error_to_end</bpmn:incoming>
+      <bpmn:incoming>flow_payment_error_to_end</bpmn:incoming>
+      <bpmn:errorEventDefinition errorRef="err_call_failure" />
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_cancelled" name="已取消">
+      <bpmn:incoming>flow_cancel_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow_start" sourceRef="start_1" targetRef="task_prepare" />
+    <bpmn:sequenceFlow id="flow_to_call_order" sourceRef="task_prepare" targetRef="call_activity_order" />
+    <bpmn:sequenceFlow id="flow_call_order_to_payment" sourceRef="call_activity_order" targetRef="call_activity_payment" />
+    <bpmn:sequenceFlow id="flow_call_payment_to_shipping" sourceRef="call_activity_payment" targetRef="call_activity_shipping" />
+    <bpmn:sequenceFlow id="flow_call_shipping_to_merge" sourceRef="call_activity_shipping" targetRef="gateway_merge" />
+    <bpmn:sequenceFlow id="flow_merge_to_finalize" sourceRef="gateway_merge" targetRef="task_finalize" />
+    <bpmn:sequenceFlow id="flow_finalize_to_end" sourceRef="task_finalize" targetRef="end_success" />
+    <bpmn:sequenceFlow id="flow_order_error" sourceRef="boundary_error_call_order" targetRef="task_order_error_handler" />
+    <bpmn:sequenceFlow id="flow_order_error_to_end" sourceRef="task_order_error_handler" targetRef="end_error" />
+    <bpmn:sequenceFlow id="flow_order_timeout" sourceRef="boundary_timer_call_order" targetRef="task_order_timeout_handler" />
+    <bpmn:sequenceFlow id="flow_order_timeout_to_merge" sourceRef="task_order_timeout_handler" targetRef="gateway_merge" />
+    <bpmn:sequenceFlow id="flow_payment_error" sourceRef="boundary_error_call_payment" targetRef="task_payment_error_handler" />
+    <bpmn:sequenceFlow id="flow_payment_error_to_end" sourceRef="task_payment_error_handler" targetRef="end_error" />
+    <bpmn:sequenceFlow id="flow_payment_escalation" sourceRef="boundary_escalation_call_payment" targetRef="task_escalation_handler" />
+    <bpmn:sequenceFlow id="flow_payment_cancel" sourceRef="boundary_signal_call_payment" targetRef="task_cancel_handler" />
+    <bpmn:sequenceFlow id="flow_cancel_to_end" sourceRef="task_cancel_handler" targetRef="end_cancelled" />
+    <bpmn:sequenceFlow id="flow_shipping_status" sourceRef="boundary_message_call_shipping" targetRef="task_shipping_status_handler" />
+    <bpmn:sequenceFlow id="flow_inventory" sourceRef="boundary_conditional_call_shipping" targetRef="task_inventory_handler" />
+    <bpmn:sequenceFlow id="flow_inventory_to_merge" sourceRef="task_inventory_handler" targetRef="gateway_merge" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_call_activity_boundary" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_call_activity_boundary" bpmnElement="process_call_activity_boundary">
+      <bpmndi:BPMNShape id="process_call_activity_boundary_di" bpmnElement="process_call_activity_boundary">
+        <dc:Bounds x="12" y="12" width="938" height="604" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
+        <dc:Bounds x="12" y="234" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="15" y="274" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_prepare_di" bpmnElement="task_prepare">
+        <dc:Bounds x="68" y="212" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="68" y="212" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call_activity_order_di" bpmnElement="call_activity_order">
+        <dc:Bounds x="188" y="212" width="132" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="188" y="212" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_error_call_order_di" bpmnElement="boundary_error_call_order">
+        <dc:Bounds x="214" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_timer_call_order_di" bpmnElement="boundary_timer_call_order">
+        <dc:Bounds x="258" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_order_error_handler_di" bpmnElement="task_order_error_handler">
+        <dc:Bounds x="182" y="345" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="182" y="345" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_order_timeout_handler_di" bpmnElement="task_order_timeout_handler">
+        <dc:Bounds x="226" y="541" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="226" y="541" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call_activity_payment_di" bpmnElement="call_activity_payment">
+        <dc:Bounds x="340" y="212" width="188" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="340" y="212" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_error_call_payment_di" bpmnElement="boundary_error_call_payment">
+        <dc:Bounds x="369" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_escalation_call_payment_di" bpmnElement="boundary_escalation_call_payment">
+        <dc:Bounds x="416" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_signal_call_payment_di" bpmnElement="boundary_signal_call_payment">
+        <dc:Bounds x="463" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_payment_error_handler_di" bpmnElement="task_payment_error_handler">
+        <dc:Bounds x="337" y="751" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="337" y="751" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_escalation_handler_di" bpmnElement="task_escalation_handler">
+        <dc:Bounds x="384" y="947" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="384" y="947" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_cancel_handler_di" bpmnElement="task_cancel_handler">
+        <dc:Bounds x="431" y="1067" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="431" y="1067" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call_activity_shipping_di" bpmnElement="call_activity_shipping">
+        <dc:Bounds x="548" y="212" width="132" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="212" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_message_call_shipping_di" bpmnElement="boundary_message_call_shipping">
+        <dc:Bounds x="574" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boundary_conditional_call_shipping_di" bpmnElement="boundary_conditional_call_shipping">
+        <dc:Bounds x="618" y="274" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_shipping_status_handler_di" bpmnElement="task_shipping_status_handler">
+        <dc:Bounds x="542" y="1263" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="542" y="1263" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_inventory_handler_di" bpmnElement="task_inventory_handler">
+        <dc:Bounds x="586" y="1383" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="586" y="1383" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_merge_di" bpmnElement="gateway_merge">
+        <dc:Bounds x="346" y="556" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_finalize_di" bpmnElement="task_finalize">
+        <dc:Bounds x="416" y="541" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="416" y="541" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_success_di" bpmnElement="end_success">
+        <dc:Bounds x="536" y="563" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="539" y="603" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_error_di" bpmnElement="end_error">
+        <dc:Bounds x="302" y="273" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="305" y="313" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_cancelled_di" bpmnElement="end_cancelled">
+        <dc:Bounds x="551" y="1089" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="548" y="1129" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_di" bpmnElement="flow_start">
+        <di:waypoint x="48" y="252" />
+        <di:waypoint x="68" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_to_call_order_di" bpmnElement="flow_to_call_order">
+        <di:waypoint x="168" y="252" />
+        <di:waypoint x="188" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_call_order_to_payment_di" bpmnElement="flow_call_order_to_payment">
+        <di:waypoint x="320" y="252" />
+        <di:waypoint x="340" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_call_payment_to_shipping_di" bpmnElement="flow_call_payment_to_shipping">
+        <di:waypoint x="528" y="252" />
+        <di:waypoint x="548" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_call_shipping_to_merge_di" bpmnElement="flow_call_shipping_to_merge">
+        <di:waypoint x="614" y="292" />
+        <di:waypoint x="614" y="312" />
+        <di:waypoint x="158" y="312" />
+        <di:waypoint x="158" y="536" />
+        <di:waypoint x="371" y="536" />
+        <di:waypoint x="371" y="556" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_merge_to_finalize_di" bpmnElement="flow_merge_to_finalize">
+        <di:waypoint x="396" y="581" />
+        <di:waypoint x="406" y="581" />
+        <di:waypoint x="406" y="581" />
+        <di:waypoint x="416" y="581" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_finalize_to_end_di" bpmnElement="flow_finalize_to_end">
+        <di:waypoint x="516" y="581" />
+        <di:waypoint x="526" y="581" />
+        <di:waypoint x="526" y="581" />
+        <di:waypoint x="536" y="581" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_error_di" bpmnElement="flow_order_error">
+        <di:waypoint x="232" y="310" />
+        <di:waypoint x="232" y="327.5" />
+        <di:waypoint x="232" y="327.5" />
+        <di:waypoint x="232" y="345" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_error_to_end_di" bpmnElement="flow_order_error_to_end">
+        <di:waypoint x="282" y="385" />
+        <di:waypoint x="710" y="385" />
+        <di:waypoint x="710" y="291" />
+        <di:waypoint x="338" y="291" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_timeout_di" bpmnElement="flow_order_timeout">
+        <di:waypoint x="276" y="310" />
+        <di:waypoint x="276" y="330" />
+        <di:waypoint x="152" y="330" />
+        <di:waypoint x="152" y="521" />
+        <di:waypoint x="276" y="521" />
+        <di:waypoint x="276" y="541" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_timeout_to_merge_di" bpmnElement="flow_order_timeout_to_merge">
+        <di:waypoint x="326" y="581" />
+        <di:waypoint x="336" y="581" />
+        <di:waypoint x="336" y="581" />
+        <di:waypoint x="346" y="581" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_error_di" bpmnElement="flow_payment_error">
+        <di:waypoint x="387" y="310" />
+        <di:waypoint x="387" y="330" />
+        <di:waypoint x="196" y="330" />
+        <di:waypoint x="196" y="731" />
+        <di:waypoint x="387" y="731" />
+        <di:waypoint x="387" y="751" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_error_to_end_di" bpmnElement="flow_payment_error_to_end">
+        <di:waypoint x="437" y="791" />
+        <di:waypoint x="710" y="791" />
+        <di:waypoint x="710" y="291" />
+        <di:waypoint x="338" y="291" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_escalation_di" bpmnElement="flow_payment_escalation">
+        <di:waypoint x="434" y="310" />
+        <di:waypoint x="434" y="330" />
+        <di:waypoint x="196" y="330" />
+        <di:waypoint x="196" y="927" />
+        <di:waypoint x="434" y="927" />
+        <di:waypoint x="434" y="947" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_cancel_di" bpmnElement="flow_payment_cancel">
+        <di:waypoint x="481" y="310" />
+        <di:waypoint x="481" y="330" />
+        <di:waypoint x="316" y="330" />
+        <di:waypoint x="316" y="1047" />
+        <di:waypoint x="481" y="1047" />
+        <di:waypoint x="481" y="1067" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_cancel_to_end_di" bpmnElement="flow_cancel_to_end">
+        <di:waypoint x="531" y="1107" />
+        <di:waypoint x="541" y="1107" />
+        <di:waypoint x="541" y="1107" />
+        <di:waypoint x="551" y="1107" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_shipping_status_di" bpmnElement="flow_shipping_status">
+        <di:waypoint x="592" y="310" />
+        <di:waypoint x="592" y="330" />
+        <di:waypoint x="307" y="330" />
+        <di:waypoint x="307" y="1243" />
+        <di:waypoint x="592" y="1243" />
+        <di:waypoint x="592" y="1263" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_inventory_di" bpmnElement="flow_inventory">
+        <di:waypoint x="636" y="310" />
+        <di:waypoint x="636" y="330" />
+        <di:waypoint x="307" y="330" />
+        <di:waypoint x="307" y="1363" />
+        <di:waypoint x="636" y="1363" />
+        <di:waypoint x="636" y="1383" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_inventory_to_merge_di" bpmnElement="flow_inventory_to_merge">
+        <di:waypoint x="686" y="1423" />
+        <di:waypoint x="686" y="581" />
+        <di:waypoint x="396" y="581" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -111,6 +111,20 @@ This ensures changes don't break existing functionality. If snapshots fail unexp
 
 **Do NOT use browser automation tools to preview diagrams.** The user will manually preview in the browser. Just make the code changes, run tests, and build.
 
+## Debugging
+
+Enable layout debug logging with the `DEBUG` environment variable:
+
+```bash
+DEBUG=true bun run test -- -t "21-subprocess"
+```
+
+Debug output (prefixed with `[BPMN]`) includes:
+- Boundary event grouping and target node movement
+- Edge routing obstacle detection and avoidance calculation
+- Edge sections merge verification
+- buildEdge pre-calculated sections check
+
 ## Key Dependencies
 
 - `elkjs` - Graph layout engine

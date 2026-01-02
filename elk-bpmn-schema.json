@@ -159,7 +159,7 @@
         },
         "edges": {
           "type": "array",
-          "description": "消息流（跨 Pool）",
+          "description": "消息流（跨 Pool）- 严格 BPMN 规范：只能放 messageFlow，不能放 sequenceFlow！sequenceFlow 必须放在 participant.edges",
           "items": { "$ref": "#/definitions/messageFlow" }
         }
       }
@@ -210,7 +210,7 @@
         },
         "edges": {
           "type": "array",
-          "description": "顺序流（Pool 内）",
+          "description": "顺序流（Pool 内）- 严格 BPMN 规范：只能放 sequenceFlow（同一 Pool 内节点的连接），不能放 messageFlow！messageFlow 必须放在 collaboration.edges",
           "items": { "$ref": "#/definitions/sequenceFlow" }
         }
       }
@@ -909,12 +909,22 @@
 
     "groupArtifact": {
       "type": "object",
-      "description": "分组",
+      "description": "分组 - 用于视觉上将一组元素分组",
       "required": ["type"],
       "properties": {
         "type": { "const": "group" },
         "name": { "type": "string" },
-        "categoryValueRef": { "type": "string" }
+        "categoryValueRef": { "type": "string" },
+        "groupedElements": {
+          "type": "array",
+          "description": "被分组的元素 ID 列表。Group 会自动计算位置和大小以包围这些元素。",
+          "items": { "type": "string" }
+        },
+        "padding": {
+          "type": "number",
+          "description": "Group 边框与被包围元素之间的内边距（像素）",
+          "default": 20
+        }
       }
     },
 

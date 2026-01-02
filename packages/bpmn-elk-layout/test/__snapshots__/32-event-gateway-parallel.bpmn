@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_event_gateway_parallel" targetNamespace="http://example.com/test-event-gateway-parallel" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
+  <bpmn:message id="msg_order" name="订单消息" />
+  <bpmn:message id="msg_payment" name="支付消息" />
+  <bpmn:signal id="sig_cancel" name="取消信号" />
+  <bpmn:process id="process_event_gateway_parallel" name="并行事件网关测试" isExecutable="true">
+    <bpmn:startEvent id="start_1" name="开始">
+      <bpmn:outgoing>flow_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="task_init" name="初始化订单">
+      <bpmn:incoming>flow_start</bpmn:incoming>
+      <bpmn:outgoing>flow_to_parallel_gateway</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:eventBasedGateway id="gateway_event_parallel" name="并行事件网关" gatewayDirection="Diverging" eventGatewayType="Parallel">
+      <bpmn:incoming>flow_to_parallel_gateway</bpmn:incoming>
+      <bpmn:outgoing>flow_parallel_order</bpmn:outgoing>
+      <bpmn:outgoing>flow_parallel_payment</bpmn:outgoing>
+      <bpmn:outgoing>flow_parallel_timer</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="catch_message_order" name="等待订单确认">
+      <bpmn:incoming>flow_parallel_order</bpmn:incoming>
+      <bpmn:outgoing>flow_order_process</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="msg_order" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catch_message_payment" name="等待支付确认">
+      <bpmn:incoming>flow_parallel_payment</bpmn:incoming>
+      <bpmn:outgoing>flow_payment_process</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="msg_payment" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catch_timer" name="等待超时">
+      <bpmn:incoming>flow_parallel_timer</bpmn:incoming>
+      <bpmn:outgoing>flow_timer_process</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_process_order" name="处理订单">
+      <bpmn:incoming>flow_order_process</bpmn:incoming>
+      <bpmn:outgoing>flow_order_to_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="task_process_payment" name="处理支付">
+      <bpmn:incoming>flow_payment_process</bpmn:incoming>
+      <bpmn:outgoing>flow_payment_to_join</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="task_timeout_handler" name="超时处理">
+      <bpmn:incoming>flow_timer_process</bpmn:incoming>
+      <bpmn:outgoing>flow_timeout_end</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:parallelGateway id="gateway_parallel_join" name="并行汇合" gatewayDirection="Converging">
+      <bpmn:incoming>flow_order_to_join</bpmn:incoming>
+      <bpmn:incoming>flow_payment_to_join</bpmn:incoming>
+      <bpmn:outgoing>flow_join_to_exclusive</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:task id="task_complete" name="完成订单">
+      <bpmn:incoming>flow_continue_complete</bpmn:incoming>
+      <bpmn:outgoing>flow_complete_end</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="end_success" name="成功结束">
+      <bpmn:incoming>flow_complete_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_timeout" name="超时结束">
+      <bpmn:incoming>flow_timeout_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:eventBasedGateway id="gateway_event_exclusive" name="排他事件网关" gatewayDirection="Diverging">
+      <bpmn:incoming>flow_join_to_exclusive</bpmn:incoming>
+      <bpmn:outgoing>flow_exclusive_cancel</bpmn:outgoing>
+      <bpmn:outgoing>flow_exclusive_continue</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="catch_signal_cancel" name="等待取消">
+      <bpmn:incoming>flow_exclusive_cancel</bpmn:incoming>
+      <bpmn:outgoing>flow_cancel_task</bpmn:outgoing>
+      <bpmn:signalEventDefinition signalRef="sig_cancel" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="catch_timer_continue" name="等待继续">
+      <bpmn:incoming>flow_exclusive_continue</bpmn:incoming>
+      <bpmn:outgoing>flow_continue_complete</bpmn:outgoing>
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="task_cancel" name="取消订单">
+      <bpmn:incoming>flow_cancel_task</bpmn:incoming>
+      <bpmn:outgoing>flow_cancel_end</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="end_cancelled" name="已取消">
+      <bpmn:incoming>flow_cancel_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:eventBasedGateway id="gateway_instantiate" name="实例化事件网关" gatewayDirection="Diverging" instantiate="true" />
+    <bpmn:sequenceFlow id="flow_start" sourceRef="start_1" targetRef="task_init" />
+    <bpmn:sequenceFlow id="flow_to_parallel_gateway" sourceRef="task_init" targetRef="gateway_event_parallel" />
+    <bpmn:sequenceFlow id="flow_parallel_order" sourceRef="gateway_event_parallel" targetRef="catch_message_order" />
+    <bpmn:sequenceFlow id="flow_parallel_payment" sourceRef="gateway_event_parallel" targetRef="catch_message_payment" />
+    <bpmn:sequenceFlow id="flow_parallel_timer" sourceRef="gateway_event_parallel" targetRef="catch_timer" />
+    <bpmn:sequenceFlow id="flow_order_process" sourceRef="catch_message_order" targetRef="task_process_order" />
+    <bpmn:sequenceFlow id="flow_payment_process" sourceRef="catch_message_payment" targetRef="task_process_payment" />
+    <bpmn:sequenceFlow id="flow_timer_process" sourceRef="catch_timer" targetRef="task_timeout_handler" />
+    <bpmn:sequenceFlow id="flow_order_to_join" sourceRef="task_process_order" targetRef="gateway_parallel_join" />
+    <bpmn:sequenceFlow id="flow_payment_to_join" sourceRef="task_process_payment" targetRef="gateway_parallel_join" />
+    <bpmn:sequenceFlow id="flow_join_to_exclusive" sourceRef="gateway_parallel_join" targetRef="gateway_event_exclusive" />
+    <bpmn:sequenceFlow id="flow_exclusive_cancel" sourceRef="gateway_event_exclusive" targetRef="catch_signal_cancel" />
+    <bpmn:sequenceFlow id="flow_exclusive_continue" sourceRef="gateway_event_exclusive" targetRef="catch_timer_continue" />
+    <bpmn:sequenceFlow id="flow_continue_complete" sourceRef="catch_timer_continue" targetRef="task_complete" />
+    <bpmn:sequenceFlow id="flow_complete_end" sourceRef="task_complete" targetRef="end_success" />
+    <bpmn:sequenceFlow id="flow_cancel_task" sourceRef="catch_signal_cancel" targetRef="task_cancel" />
+    <bpmn:sequenceFlow id="flow_cancel_end" sourceRef="task_cancel" targetRef="end_cancelled" />
+    <bpmn:sequenceFlow id="flow_timeout_end" sourceRef="task_timeout_handler" targetRef="end_timeout" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_event_gateway_parallel" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_event_gateway_parallel" bpmnElement="process_event_gateway_parallel">
+      <bpmndi:BPMNShape id="process_event_gateway_parallel_di" bpmnElement="process_event_gateway_parallel">
+        <dc:Bounds x="12" y="12" width="942" height="304" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
+        <dc:Bounds x="26" y="46.5" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="29" y="86.5" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_init_di" bpmnElement="task_init">
+        <dc:Bounds x="102" y="24.5" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="102" y="24.5" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_event_parallel_di" bpmnElement="gateway_event_parallel">
+        <dc:Bounds x="222" y="39.5" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="219" y="7.5" width="56" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catch_message_order_di" bpmnElement="catch_message_order">
+        <dc:Bounds x="322" y="234" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="312" y="274" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catch_message_payment_di" bpmnElement="catch_message_payment">
+        <dc:Bounds x="322" y="134" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="312" y="174" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catch_timer_di" bpmnElement="catch_timer">
+        <dc:Bounds x="308" y="34" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="291" y="74" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_process_order_di" bpmnElement="task_process_order">
+        <dc:Bounds x="398" y="212" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="212" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_process_payment_di" bpmnElement="task_process_payment">
+        <dc:Bounds x="398" y="112" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="112" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_timeout_handler_di" bpmnElement="task_timeout_handler">
+        <dc:Bounds x="398" y="12" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="398" y="12" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_parallel_join_di" bpmnElement="gateway_parallel_join">
+        <dc:Bounds x="518" y="135.33333333333331" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="528" y="103.33333333333331" width="30" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_complete_di" bpmnElement="task_complete">
+        <dc:Bounds x="768" y="212" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="768" y="212" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_success_di" bpmnElement="end_success">
+        <dc:Bounds x="888" y="234" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="891" y="274" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_timeout_di" bpmnElement="end_timeout">
+        <dc:Bounds x="518" y="34" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="521" y="74" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_event_exclusive_di" bpmnElement="gateway_event_exclusive">
+        <dc:Bounds x="588" y="135.33333333333331" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="585" y="103.33333333333331" width="56" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catch_signal_cancel_di" bpmnElement="catch_signal_cancel">
+        <dc:Bounds x="688" y="134" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="678" y="174" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="catch_timer_continue_di" bpmnElement="catch_timer_continue">
+        <dc:Bounds x="664" y="234" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="274" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_cancel_di" bpmnElement="task_cancel">
+        <dc:Bounds x="768" y="112" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="768" y="112" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_cancelled_di" bpmnElement="end_cancelled">
+        <dc:Bounds x="888" y="134" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="885" y="174" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_instantiate_di" bpmnElement="gateway_instantiate">
+        <dc:Bounds x="12" y="102.5" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2" y="70.5" width="70" height="28" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_start_di" bpmnElement="flow_start">
+        <di:waypoint x="62" y="64.5" />
+        <di:waypoint x="102" y="64.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_to_parallel_gateway_di" bpmnElement="flow_to_parallel_gateway">
+        <di:waypoint x="202" y="64.5" />
+        <di:waypoint x="222" y="64.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_parallel_order_di" bpmnElement="flow_parallel_order">
+        <di:waypoint x="272" y="77" />
+        <di:waypoint x="288" y="77" />
+        <di:waypoint x="288" y="252" />
+        <di:waypoint x="322" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_parallel_payment_di" bpmnElement="flow_parallel_payment">
+        <di:waypoint x="272" y="64.5" />
+        <di:waypoint x="298" y="64.5" />
+        <di:waypoint x="298" y="152" />
+        <di:waypoint x="322" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_parallel_timer_di" bpmnElement="flow_parallel_timer">
+        <di:waypoint x="272" y="52" />
+        <di:waypoint x="308" y="52" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_process_di" bpmnElement="flow_order_process">
+        <di:waypoint x="358" y="252" />
+        <di:waypoint x="398" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_process_di" bpmnElement="flow_payment_process">
+        <di:waypoint x="358" y="152" />
+        <di:waypoint x="398" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timer_process_di" bpmnElement="flow_timer_process">
+        <di:waypoint x="344" y="52" />
+        <di:waypoint x="398" y="52" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_order_to_join_di" bpmnElement="flow_order_to_join">
+        <di:waypoint x="498" y="252" />
+        <di:waypoint x="508" y="252" />
+        <di:waypoint x="508" y="168.66666666666666" />
+        <di:waypoint x="518" y="168.66666666666666" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_payment_to_join_di" bpmnElement="flow_payment_to_join">
+        <di:waypoint x="498" y="152" />
+        <di:waypoint x="518" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_join_to_exclusive_di" bpmnElement="flow_join_to_exclusive">
+        <di:waypoint x="568" y="160.33333333333331" />
+        <di:waypoint x="588" y="160.33333333333331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_exclusive_cancel_di" bpmnElement="flow_exclusive_cancel">
+        <di:waypoint x="638" y="152" />
+        <di:waypoint x="688" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_exclusive_continue_di" bpmnElement="flow_exclusive_continue">
+        <di:waypoint x="638" y="168.66666666666666" />
+        <di:waypoint x="654" y="168.66666666666666" />
+        <di:waypoint x="654" y="252" />
+        <di:waypoint x="664" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_continue_complete_di" bpmnElement="flow_continue_complete">
+        <di:waypoint x="700" y="252" />
+        <di:waypoint x="768" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_complete_end_di" bpmnElement="flow_complete_end">
+        <di:waypoint x="868" y="252" />
+        <di:waypoint x="888" y="252" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_cancel_task_di" bpmnElement="flow_cancel_task">
+        <di:waypoint x="724" y="152" />
+        <di:waypoint x="768" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_cancel_end_di" bpmnElement="flow_cancel_end">
+        <di:waypoint x="868" y="152" />
+        <di:waypoint x="888" y="152" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_timeout_end_di" bpmnElement="flow_timeout_end">
+        <di:waypoint x="498" y="52" />
+        <di:waypoint x="518" y="52" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

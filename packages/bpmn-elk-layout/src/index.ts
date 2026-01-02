@@ -25,12 +25,7 @@
 // Main converter class
 export { BpmnElkLayout, type BpmnElkLayoutOptions } from './converter';
 
-// Prompt template generator
-export {
-  PromptTemplateGenerator,
-  generatePromptTemplate,
-  type PromptGeneratorOptions,
-} from './prompt-generator';
+// Note: PromptTemplateGenerator is Node.js only, import from 'bpmn-elk-layout/node'
 
 // Types
 export type {

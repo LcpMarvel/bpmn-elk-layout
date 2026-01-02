@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "mcp__plugin_context7_context7__resolve-library-id",
-      "mcp__plugin_context7_context7__query-docs"
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(DEBUG=true bun run test:*)",
+      "Skill(document-skills:skill-creator)",
+      "Bash(chmod:*)",
+      "Bash(.claude/skills/deepseek-bpmn-generator/generate.sh:*)",
+      "Bash(DEBUG=true bun run:*)"
     ]
   }
 }

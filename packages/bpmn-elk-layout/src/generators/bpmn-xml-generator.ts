@@ -255,6 +255,9 @@ export class BpmnXmlGenerator {
     // Handle specific element types
     this.applyElementProperties(bpmnElement, element);
 
+    // Add data associations (BPMN 2.0 spec: child elements of Activity)
+    this.applyDataAssociations(bpmnElement, element);
+
     return bpmnElement;
   }
 
@@ -499,6 +502,37 @@ export class BpmnXmlGenerator {
       bpmnElement.conditionExpression = this.moddle.create('bpmn:FormalExpression', {
         language: condExpr.language,
         body: condExpr.body,
+      });
+    }
+  }
+
+  /**
+   * Apply data associations (BPMN 2.0 spec: dataInputAssociation/dataOutputAssociation are child elements of Activity)
+   */
+  private applyDataAssociations(bpmnElement: ModdleElement, element: FlowElementModel): void {
+    // Add dataInputAssociations
+    if (element.dataInputAssociations && element.dataInputAssociations.length > 0) {
+      bpmnElement.dataInputAssociations = element.dataInputAssociations.map((assoc) => {
+        const dataInputAssoc = this.moddle.create('bpmn:DataInputAssociation', {
+          id: assoc.id,
+        });
+        // sourceRef is an array of references
+        dataInputAssoc.sourceRef = [{ id: assoc.sourceRef }];
+        return dataInputAssoc;
+      });
+    }
+
+    // Add dataOutputAssociations
+    if (element.dataOutputAssociations && element.dataOutputAssociations.length > 0) {
+      bpmnElement.dataOutputAssociations = element.dataOutputAssociations.map((assoc) => {
+        const dataOutputAssoc = this.moddle.create('bpmn:DataOutputAssociation', {
+          id: assoc.id,
+        });
+        // targetRef is a single reference
+        if (assoc.targetRef) {
+          dataOutputAssoc.targetRef = { id: assoc.targetRef };
+        }
+        return dataOutputAssoc;
       });
     }
   }

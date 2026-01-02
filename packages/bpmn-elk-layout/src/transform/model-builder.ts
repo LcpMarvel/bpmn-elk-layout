@@ -13,6 +13,9 @@ import type {
 import { ReferenceResolver } from './reference-resolver';
 import { LaneResolver, type LaneSetInfo } from './lane-resolver';
 
+// Debug flag for layout logging
+const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG === 'true';
+
 // ============================================================================
 // Model Types
 // ============================================================================
@@ -65,6 +68,12 @@ export interface ProcessModel {
   artifacts: ArtifactModel[];
 }
 
+export interface DataAssociationModel {
+  id: string;
+  sourceRef: string;
+  targetRef?: string;  // Optional for dataInputAssociation (target is implicit)
+}
+
 export interface FlowElementModel {
   type: string;
   id: string;
@@ -78,6 +87,9 @@ export interface FlowElementModel {
   // For subprocesses - nested content
   flowElements?: FlowElementModel[];
   artifacts?: ArtifactModel[];
+  // For data associations (BPMN spec: child elements of activity)
+  dataInputAssociations?: DataAssociationModel[];
+  dataOutputAssociations?: DataAssociationModel[];
 }
 
 export interface ArtifactModel {
@@ -290,6 +302,9 @@ export class ModelBuilder {
     // Collect sequence flows
     this.collectSequenceFlows(participant.edges ?? [], process.flowElements);
 
+    // Collect data associations and attach to flow elements (BPMN spec compliance)
+    this.collectDataAssociations(participant.edges ?? [], process.flowElements);
+
     return process;
   }
 
@@ -325,6 +340,9 @@ export class ModelBuilder {
     // Collect associations from edges
     this.collectAssociations(processNode.edges ?? [], process.artifacts);
 
+    // Collect data associations and attach to flow elements (BPMN spec compliance)
+    this.collectDataAssociations(processNode.edges ?? [], process.flowElements);
+
     return process;
   }
 
@@ -336,6 +354,14 @@ export class ModelBuilder {
       // Skip lanes - just traverse their children
       if (child.bpmn?.type === 'lane') {
         this.collectFlowElements(child.children ?? [], elements);
+        continue;
+      }
+
+      // Skip nested process - traverse its children and edges
+      // This handles the case where participant > children > [process > children: [flowNodes]]
+      if (child.bpmn?.type === 'process') {
+        this.collectFlowElements(child.children ?? [], elements);
+        this.collectSequenceFlows(child.edges ?? [], elements);
         continue;
       }
 
@@ -446,6 +472,57 @@ export class ModelBuilder {
   }
 
   /**
+   * Collect data associations from edges and attach them to flow elements
+   * Per BPMN 2.0 spec: dataInputAssociation/dataOutputAssociation are child elements of Activity
+   */
+  private collectDataAssociations(edges: EdgeNode[], elements: FlowElementModel[]): void {
+    // Build a map of element IDs to their models for quick lookup
+    const elementMap = new Map<string, FlowElementModel>();
+    for (const element of elements) {
+      elementMap.set(element.id, element);
+    }
+
+    for (const edge of edges) {
+      const edgeType = edge.bpmn?.type;
+
+      if (edgeType === 'dataInputAssociation') {
+        // dataInputAssociation: data object (source) -> task (target)
+        // The association is a child of the TARGET task
+        const targetId = edge.targets[0];
+        const sourceId = edge.sources[0];
+        const targetElement = elementMap.get(targetId);
+
+        if (targetElement) {
+          if (!targetElement.dataInputAssociations) {
+            targetElement.dataInputAssociations = [];
+          }
+          targetElement.dataInputAssociations.push({
+            id: edge.id,
+            sourceRef: sourceId,
+          });
+        }
+      } else if (edgeType === 'dataOutputAssociation') {
+        // dataOutputAssociation: task (source) -> data object (target)
+        // The association is a child of the SOURCE task
+        const sourceId = edge.sources[0];
+        const targetId = edge.targets[0];
+        const sourceElement = elementMap.get(sourceId);
+
+        if (sourceElement) {
+          if (!sourceElement.dataOutputAssociations) {
+            sourceElement.dataOutputAssociations = [];
+          }
+          sourceElement.dataOutputAssociations.push({
+            id: edge.id,
+            sourceRef: sourceId,
+            targetRef: targetId,
+          });
+        }
+      }
+    }
+  }
+
+  /**
    * Build an artifact model
    */
   private buildArtifact(artifact: ArtifactNode): ArtifactModel {
@@ -497,13 +574,15 @@ export class ModelBuilder {
    * Collect shapes and edges recursively
    * @param offsetX - Parent container's absolute X offset
    * @param offsetY - Parent container's absolute Y offset
+   * @param insideParticipant - Whether we are inside a participant container
    */
   private collectShapesAndEdges(
     node: LayoutedNode,
     shapes: ShapeModel[],
     edges: EdgeModel[],
     offsetX: number = 0,
-    offsetY: number = 0
+    offsetY: number = 0,
+    insideParticipant: boolean = false
   ): void {
     // Add shape for this node (if it has coordinates)
     if (node.x !== undefined && node.y !== undefined) {
@@ -535,15 +614,21 @@ export class ModelBuilder {
 
     const isPoolOrLane = node.bpmn?.type === 'participant' || node.bpmn?.type === 'lane';
 
-    const isContainer = isExpandedSubprocess || isPoolOrLane;
+    // Process nested inside participant also acts as a container for coordinate offsets
+    const isNestedProcess = node.bpmn?.type === 'process' && insideParticipant;
+
+    const isContainer = isExpandedSubprocess || isPoolOrLane || isNestedProcess;
 
     const childOffsetX = isContainer ? offsetX + (node.x ?? 0) : offsetX;
     const childOffsetY = isContainer ? offsetY + (node.y ?? 0) : offsetY;
 
+    // Track if we're entering a participant
+    const childInsideParticipant = insideParticipant || node.bpmn?.type === 'participant';
+
     // Process children
     if (node.children) {
       for (const child of node.children) {
-        this.collectShapesAndEdges(child as LayoutedNode, shapes, edges, childOffsetX, childOffsetY);
+        this.collectShapesAndEdges(child as LayoutedNode, shapes, edges, childOffsetX, childOffsetY, childInsideParticipant);
       }
     }
 
@@ -635,6 +720,31 @@ export class ModelBuilder {
   }
 
   /**
+   * Estimate number of lines needed for a label based on text and width
+   * Uses approximate character width of 14px for CJK and 7px for ASCII
+   */
+  private estimateLabelLines(text: string, maxWidth: number): number {
+    if (!text || maxWidth <= 0) return 1;
+
+    let currentLineWidth = 0;
+    let lines = 1;
+
+    for (const char of text) {
+      // CJK characters are wider
+      const charWidth = char.charCodeAt(0) > 255 ? 14 : 7;
+
+      if (currentLineWidth + charWidth > maxWidth) {
+        lines++;
+        currentLineWidth = charWidth;
+      } else {
+        currentLineWidth += charWidth;
+      }
+    }
+
+    return lines;
+  }
+
+  /**
    * Build a shape model
    */
   private buildShape(node: LayoutedNode, offsetX: number = 0, offsetY: number = 0): ShapeModel {
@@ -685,9 +795,14 @@ export class ModelBuilder {
       } else if (this.isGatewayType(node.bpmn?.type)) {
         // For gateways (diamonds), position the label above the shape (bpmn-js default behavior)
         const labelWidth = label.width ?? 100;
-        const labelHeight = label.height ?? 14;
+        // Calculate label height based on text content (may need multiple lines)
+        // Use bpmn.name as the display text since that's what bpmn-js renders
+        const labelText = node.bpmn?.name ?? label.text ?? '';
+        const estimatedLines = this.estimateLabelLines(labelText, labelWidth);
+        const labelHeight = estimatedLines * 14; // 14px per line
 
         // Position label above the gateway diamond, horizontally centered
+        // Adjust Y position upward based on label height
         shape.label = {
           bounds: {
             x: absoluteX + (nodeWidth - labelWidth) / 2,
@@ -719,14 +834,24 @@ export class ModelBuilder {
     const sourceId = edge.sources?.[0];
     const targetId = edge.targets?.[0];
 
-    // Check if source is a boundary event - need to recalculate waypoints
+    // Check if source is a boundary event
     const bePosition = sourceId ? this.boundaryEventPositions.get(sourceId) : undefined;
     const targetPosition = targetId ? this.nodePositions.get(targetId) : undefined;
 
     let waypoints: PointModel[] = [];
 
-    if (bePosition && targetPosition) {
-      // Source is a boundary event - calculate new waypoints
+    // Check if edge has pre-calculated sections with bendPoints (from obstacle avoidance)
+    const hasPreCalculatedSections = edge.sections &&
+      edge.sections.length > 0 &&
+      edge.sections[0].bendPoints &&
+      edge.sections[0].bendPoints.length > 0;
+
+    if (DEBUG && bePosition) {
+      console.log(`[BPMN] buildEdge ${edge.id}: preCalculated=${hasPreCalculatedSections}`);
+    }
+
+    if (bePosition && targetPosition && !hasPreCalculatedSections) {
+      // Source is a boundary event without pre-calculated routing - calculate simple waypoints
       // Start from bottom center of boundary event
       const startX = bePosition.x + bePosition.width / 2;
       const startY = bePosition.y + bePosition.height;
@@ -789,22 +914,102 @@ export class ModelBuilder {
       waypoints,
     };
 
-    // Add label if present
+    // Add label if present - center it on the edge
     if (edge.labels && edge.labels.length > 0) {
       const label = edge.labels[0];
-      if (label.x !== undefined && label.y !== undefined) {
-        edgeModel.label = {
-          bounds: {
-            x: offsetX + label.x,
-            y: offsetY + label.y,
-            width: label.width ?? 50,
-            height: label.height ?? 14,
-          },
-        };
-      }
+      const labelWidth = label.width ?? 50;
+      const labelHeight = label.height ?? 14;
+
+      // Calculate edge midpoint for label placement
+      const labelPos = this.calculateEdgeLabelPosition(waypoints, labelWidth, labelHeight);
+
+      edgeModel.label = {
+        bounds: {
+          x: labelPos.x,
+          y: labelPos.y,
+          width: labelWidth,
+          height: labelHeight,
+        },
+      };
     }
 
     return edgeModel;
+  }
+
+  /**
+   * Calculate label position centered on the edge
+   * Places label at the midpoint of the edge, offset above the line
+   */
+  private calculateEdgeLabelPosition(
+    waypoints: PointModel[],
+    labelWidth: number,
+    labelHeight: number
+  ): { x: number; y: number } {
+    if (waypoints.length < 2) {
+      return { x: 0, y: 0 };
+    }
+
+    // Find the midpoint segment of the edge
+    const totalLength = this.calculatePathLength(waypoints);
+    const halfLength = totalLength / 2;
+
+    // Walk along the path to find the midpoint
+    let accumulatedLength = 0;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const segmentLength = this.distance(waypoints[i], waypoints[i + 1]);
+      const nextAccumulated = accumulatedLength + segmentLength;
+
+      if (nextAccumulated >= halfLength) {
+        // Midpoint is in this segment
+        const ratio = (halfLength - accumulatedLength) / segmentLength;
+        const midX = waypoints[i].x + (waypoints[i + 1].x - waypoints[i].x) * ratio;
+        const midY = waypoints[i].y + (waypoints[i + 1].y - waypoints[i].y) * ratio;
+
+        // Determine if segment is horizontal or vertical
+        const dx = waypoints[i + 1].x - waypoints[i].x;
+        const dy = waypoints[i + 1].y - waypoints[i].y;
+
+        if (Math.abs(dy) < Math.abs(dx)) {
+          // Horizontal segment - place label above the line
+          return {
+            x: midX - labelWidth / 2,
+            y: midY - labelHeight - 4, // 4px above the line
+          };
+        } else {
+          // Vertical segment - place label to the left of the line
+          return {
+            x: midX - labelWidth - 4, // 4px to the left
+            y: midY - labelHeight / 2,
+          };
+        }
+      }
+      accumulatedLength = nextAccumulated;
+    }
+
+    // Fallback: use the geometric center
+    const lastPoint = waypoints[waypoints.length - 1];
+    return {
+      x: lastPoint.x - labelWidth / 2,
+      y: lastPoint.y - labelHeight - 4,
+    };
+  }
+
+  /**
+   * Calculate total path length
+   */
+  private calculatePathLength(waypoints: PointModel[]): number {
+    let length = 0;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      length += this.distance(waypoints[i], waypoints[i + 1]);
+    }
+    return length;
+  }
+
+  /**
+   * Calculate distance between two points
+   */
+  private distance(p1: PointModel, p2: PointModel): number {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
   }
 }
 
@@ -898,7 +1103,7 @@ interface LayoutedNode {
   children?: LayoutedNode[];
   edges?: LayoutedEdge[];
   boundaryEvents?: Array<{ id: string; x?: number; y?: number; width?: number; height?: number }>;
-  labels?: Array<{ x?: number; y?: number; width?: number; height?: number }>;
+  labels?: Array<{ text?: string; x?: number; y?: number; width?: number; height?: number }>;
 }
 
 interface LayoutedEdge {
