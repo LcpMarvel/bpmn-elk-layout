@@ -14,7 +14,7 @@ import { ReferenceResolver } from './reference-resolver';
 import { LaneResolver, type LaneSetInfo } from './lane-resolver';
 
 // Debug flag for layout logging
-const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG === 'true';
+const DEBUG = typeof process !== 'undefined' && process.env?.['DEBUG'] === 'true';
 
 // ============================================================================
 // Model Types
@@ -178,6 +178,8 @@ export class ModelBuilder {
   private nodePositions: Map<string, { x: number; y: number; width: number; height: number }> = new Map();
   // Map to track the offset used for each node (for edge coordinate transformation)
   private nodeOffsets: Map<string, { x: number; y: number }> = new Map();
+  // Map to track node BPMN metadata for gateway detection
+  private nodeBpmn: Map<string, { type?: string }> = new Map();
 
   constructor() {
     this.refResolver = new ReferenceResolver();
@@ -192,6 +194,7 @@ export class ModelBuilder {
     this.laneResolver.reset();
     this.boundaryEventPositions.clear();
     this.nodePositions.clear();
+    this.nodeBpmn.clear();
 
     // Resolve references first
     this.refResolver.resolve(graph);
@@ -269,13 +272,16 @@ export class ModelBuilder {
         isBlackBox: p.bpmn?.isBlackBox,
         participantMultiplicity: p.bpmn?.participantMultiplicity,
       })),
-      messageFlows: (collab.edges ?? []).map((e) => ({
-        id: e.id,
-        name: e.bpmn?.name,
-        sourceRef: e.sources[0],
-        targetRef: e.targets[0],
-        messageRef: e.bpmn?.messageRef,
-      })),
+      messageFlows: (collab.edges ?? [])
+        .filter((e): e is typeof e & { sources: [string, ...string[]]; targets: [string, ...string[]] } =>
+          e.sources[0] !== undefined && e.targets[0] !== undefined)
+        .map((e) => ({
+          id: e.id,
+          name: e.bpmn?.name,
+          sourceRef: e.sources[0],
+          targetRef: e.targets[0],
+          messageRef: e.bpmn?.messageRef,
+        })),
     };
   }
 
@@ -464,7 +470,7 @@ export class ModelBuilder {
           properties: {
             sourceRef: edge.sources[0],
             targetRef: edge.targets[0],
-            associationDirection: edge.bpmn?.associationDirection ?? 'None',
+            associationDirection: (edge.bpmn as { associationDirection?: string })?.associationDirection ?? 'None',
           },
         });
       }
@@ -490,6 +496,7 @@ export class ModelBuilder {
         // The association is a child of the TARGET task
         const targetId = edge.targets[0];
         const sourceId = edge.sources[0];
+        if (!targetId || !sourceId) continue;
         const targetElement = elementMap.get(targetId);
 
         if (targetElement) {
@@ -506,6 +513,7 @@ export class ModelBuilder {
         // The association is a child of the SOURCE task
         const sourceId = edge.sources[0];
         const targetId = edge.targets[0];
+        if (!sourceId || !targetId) continue;
         const sourceElement = elementMap.get(sourceId);
 
         if (sourceElement) {
@@ -599,6 +607,11 @@ export class ModelBuilder {
         height: nodeHeight,
       });
 
+      // Store node BPMN metadata for gateway detection
+      if (node.bpmn) {
+        this.storeNodeBpmn(node.id, { type: node.bpmn.type });
+      }
+
       // Store the offset used for this node (needed for edge coordinate transformation)
       this.nodeOffsets.set(node.id, { x: offsetX, y: offsetY });
 
@@ -610,7 +623,7 @@ export class ModelBuilder {
     const isExpandedSubprocess = node.bpmn?.isExpanded === true &&
       (node.bpmn?.type === 'subProcess' || node.bpmn?.type === 'transaction' ||
        node.bpmn?.type === 'adHocSubProcess' || node.bpmn?.type === 'eventSubProcess' ||
-       node.bpmn?.triggeredByEvent === true);
+       (node.bpmn as { triggeredByEvent?: boolean })?.triggeredByEvent === true);
 
     const isPoolOrLane = node.bpmn?.type === 'participant' || node.bpmn?.type === 'lane';
 
@@ -720,6 +733,171 @@ export class ModelBuilder {
   }
 
   /**
+   * Store node BPMN metadata for later gateway detection
+   */
+  private storeNodeBpmn(nodeId: string, bpmn: { type?: string }): void {
+    this.nodeBpmn.set(nodeId, bpmn);
+  }
+
+  /**
+   * Find node BPMN metadata by id
+   */
+  private findNodeBpmn(nodeId: string): { type?: string } | undefined {
+    return this.nodeBpmn.get(nodeId);
+  }
+
+  /**
+   * Adjust an edge endpoint to connect to a gateway's diamond shape
+   * Gateway diamonds have 4 corners: left, top, right, bottom
+   */
+  private adjustGatewayEndpoint(
+    endpoint: PointModel,
+    adjacentPoint: PointModel,
+    gatewayPos: { x: number; y: number; width: number; height: number },
+    isSource: boolean
+  ): PointModel {
+    const gatewayCenterX = gatewayPos.x + gatewayPos.width / 2;
+    const gatewayCenterY = gatewayPos.y + gatewayPos.height / 2;
+    const tolerance = 1; // Tolerance for corner detection
+
+    if (DEBUG) {
+      console.log(`[BPMN] adjustGatewayEndpoint: isSource=${isSource}`);
+      console.log(`  endpoint: (${endpoint.x}, ${endpoint.y})`);
+      console.log(`  gatewayPos: x=${gatewayPos.x}, y=${gatewayPos.y}, w=${gatewayPos.width}, h=${gatewayPos.height}`);
+      console.log(`  gatewayCenter: (${gatewayCenterX}, ${gatewayCenterY})`);
+      console.log(`  right edge x: ${gatewayPos.x + gatewayPos.width}`);
+    }
+
+    // Diamond corners (at midpoints of bounding box edges)
+    const leftCorner = { x: gatewayPos.x, y: gatewayCenterY };
+    const rightCorner = { x: gatewayPos.x + gatewayPos.width, y: gatewayCenterY };
+    const topCorner = { x: gatewayCenterX, y: gatewayPos.y };
+    const bottomCorner = { x: gatewayCenterX, y: gatewayPos.y + gatewayPos.height };
+
+    // Check if endpoint is already at a diamond corner (no adjustment needed)
+    // Left corner: x at left edge AND y at center
+    if (Math.abs(endpoint.x - gatewayPos.x) < tolerance &&
+        Math.abs(endpoint.y - gatewayCenterY) < tolerance) {
+      if (DEBUG) console.log(`  -> Already at LEFT corner, no adjustment`);
+      return endpoint;
+    }
+    // Right corner: x at right edge AND y at center
+    if (Math.abs(endpoint.x - (gatewayPos.x + gatewayPos.width)) < tolerance &&
+        Math.abs(endpoint.y - gatewayCenterY) < tolerance) {
+      if (DEBUG) console.log(`  -> Already at RIGHT corner, no adjustment`);
+      return endpoint;
+    }
+    // Top corner: y at top edge AND x at center
+    if (Math.abs(endpoint.y - gatewayPos.y) < tolerance &&
+        Math.abs(endpoint.x - gatewayCenterX) < tolerance) {
+      if (DEBUG) console.log(`  -> Already at TOP corner, no adjustment`);
+      return endpoint;
+    }
+    // Bottom corner: y at bottom edge AND x at center
+    if (Math.abs(endpoint.y - (gatewayPos.y + gatewayPos.height)) < tolerance &&
+        Math.abs(endpoint.x - gatewayCenterX) < tolerance) {
+      if (DEBUG) console.log(`  -> Already at BOTTOM corner, no adjustment`);
+      return endpoint;
+    }
+
+    if (DEBUG) {
+      console.log(`  -> NOT at corner, will adjust`);
+    }
+
+    // Endpoint is NOT at a corner - calculate intersection with diamond edge
+    const result = this.calculateDiamondIntersection(endpoint, gatewayPos, gatewayCenterX, gatewayCenterY, isSource, adjacentPoint);
+    if (DEBUG) {
+      console.log(`  -> Adjusted to: (${result.x}, ${result.y})`);
+    }
+    return result;
+  }
+
+  /**
+   * Calculate the intersection point with the diamond edge
+   */
+  private calculateDiamondIntersection(
+    endpoint: PointModel,
+    gatewayPos: { x: number; y: number; width: number; height: number },
+    gatewayCenterX: number,
+    gatewayCenterY: number,
+    isSource: boolean,
+    adjacentPoint: PointModel
+  ): PointModel {
+    const tolerance = 1;
+
+    const leftCorner = { x: gatewayPos.x, y: gatewayCenterY };
+    const rightCorner = { x: gatewayPos.x + gatewayPos.width, y: gatewayCenterY };
+    const topCorner = { x: gatewayCenterX, y: gatewayPos.y };
+    const bottomCorner = { x: gatewayCenterX, y: gatewayPos.y + gatewayPos.height };
+
+    // Determine which side based on endpoint position relative to gateway
+    const isOnLeftEdge = Math.abs(endpoint.x - gatewayPos.x) < tolerance;
+    const isOnRightEdge = Math.abs(endpoint.x - (gatewayPos.x + gatewayPos.width)) < tolerance;
+    const isOnTopEdge = Math.abs(endpoint.y - gatewayPos.y) < tolerance;
+    const isOnBottomEdge = Math.abs(endpoint.y - (gatewayPos.y + gatewayPos.height)) < tolerance;
+
+    const halfWidth = gatewayPos.width / 2;
+    const halfHeight = gatewayPos.height / 2;
+
+    if (isOnLeftEdge || isOnRightEdge) {
+      // Endpoint is on left or right edge of bounding box but not at corner
+      // Calculate diamond edge intersection at this Y position
+      const yDistFromCenter = Math.abs(endpoint.y - gatewayCenterY);
+
+      if (yDistFromCenter >= halfHeight) {
+        // Outside diamond vertically - snap to corner
+        return isOnLeftEdge ? leftCorner : rightCorner;
+      }
+
+      // Diamond edge equation: |x - centerX| / halfWidth + |y - centerY| / halfHeight = 1
+      const xOffsetFromCenter = halfWidth * (1 - yDistFromCenter / halfHeight);
+      const intersectX = isOnLeftEdge
+        ? gatewayCenterX - xOffsetFromCenter
+        : gatewayCenterX + xOffsetFromCenter;
+
+      return { x: intersectX, y: endpoint.y };
+    }
+
+    if (isOnTopEdge || isOnBottomEdge) {
+      // Endpoint is on top or bottom edge of bounding box but not at corner
+      // Calculate diamond edge intersection at this X position
+      const xDistFromCenter = Math.abs(endpoint.x - gatewayCenterX);
+
+      if (xDistFromCenter >= halfWidth) {
+        // Outside diamond horizontally - snap to corner
+        return isOnTopEdge ? topCorner : bottomCorner;
+      }
+
+      const yOffsetFromCenter = halfHeight * (1 - xDistFromCenter / halfWidth);
+      const intersectY = isOnTopEdge
+        ? gatewayCenterY - yOffsetFromCenter
+        : gatewayCenterY + yOffsetFromCenter;
+
+      return { x: endpoint.x, y: intersectY };
+    }
+
+    // Endpoint is not on any edge - use approach direction to determine corner
+    const dx = isSource ? adjacentPoint.x - endpoint.x : endpoint.x - adjacentPoint.x;
+    const dy = isSource ? adjacentPoint.y - endpoint.y : endpoint.y - adjacentPoint.y;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal approach
+      if (isSource) {
+        return dx > 0 ? rightCorner : leftCorner;
+      } else {
+        return dx > 0 ? leftCorner : rightCorner;
+      }
+    } else {
+      // Vertical approach
+      if (isSource) {
+        return dy > 0 ? bottomCorner : topCorner;
+      } else {
+        return dy > 0 ? topCorner : bottomCorner;
+      }
+    }
+  }
+
+  /**
    * Estimate number of lines needed for a label based on text and width
    * Uses approximate character width of 14px for CJK and 7px for ASCII
    */
@@ -775,6 +953,7 @@ export class ModelBuilder {
     // Add label if present
     if (node.labels && node.labels.length > 0) {
       const label = node.labels[0];
+      if (!label) return shape;
       const nodeWidth = node.width ?? 36;
       const nodeHeight = node.height ?? 36;
 
@@ -794,10 +973,10 @@ export class ModelBuilder {
         };
       } else if (this.isGatewayType(node.bpmn?.type)) {
         // For gateways (diamonds), position the label above the shape (bpmn-js default behavior)
-        const labelWidth = label.width ?? 100;
+        const labelWidth = label?.width ?? 100;
         // Calculate label height based on text content (may need multiple lines)
         // Use bpmn.name as the display text since that's what bpmn-js renders
-        const labelText = node.bpmn?.name ?? label.text ?? '';
+        const labelText = node.bpmn?.name ?? label?.text ?? '';
         const estimatedLines = this.estimateLabelLines(labelText, labelWidth);
         const labelHeight = estimatedLines * 14; // 14px per line
 
@@ -811,14 +990,14 @@ export class ModelBuilder {
             height: labelHeight,
           },
         };
-      } else if (label.x !== undefined && label.y !== undefined) {
+      } else if (label?.x !== undefined && label?.y !== undefined) {
         // For other elements, use ELK-calculated position (relative to node, converted to absolute)
         shape.label = {
           bounds: {
             x: absoluteX + label.x,
             y: absoluteY + label.y,
-            width: label.width ?? 100,
-            height: label.height ?? 20,
+            width: label?.width ?? 100,
+            height: label?.height ?? 20,
           },
         };
       }
@@ -838,12 +1017,18 @@ export class ModelBuilder {
     const bePosition = sourceId ? this.boundaryEventPositions.get(sourceId) : undefined;
     const targetPosition = targetId ? this.nodePositions.get(targetId) : undefined;
 
+    // Check if source or target is a gateway (for diamond shape adjustment)
+    const sourceNode = sourceId ? this.findNodeBpmn(sourceId) : undefined;
+    const targetNode = targetId ? this.findNodeBpmn(targetId) : undefined;
+    const sourceIsGateway = this.isGatewayType(sourceNode?.type);
+    const targetIsGateway = this.isGatewayType(targetNode?.type);
+
     let waypoints: PointModel[] = [];
 
     // Check if edge has pre-calculated sections with bendPoints (from obstacle avoidance)
     const hasPreCalculatedSections = edge.sections &&
       edge.sections.length > 0 &&
-      edge.sections[0].bendPoints &&
+      edge.sections[0]?.bendPoints &&
       edge.sections[0].bendPoints.length > 0;
 
     if (DEBUG && bePosition) {
@@ -906,6 +1091,51 @@ export class ModelBuilder {
         // End point
         waypoints.push({ x: offsetX + section.endPoint.x, y: offsetY + section.endPoint.y });
       }
+
+      // Adjust endpoints for gateway diamond shapes
+      // This calculates the actual intersection with the diamond edge to maintain
+      // visual separation when multiple edges connect to the same gateway side
+      if (waypoints.length >= 2) {
+        // Adjust start point if source is a gateway
+        if (sourceIsGateway && sourceId) {
+          const sourcePos = this.nodePositions.get(sourceId);
+          if (sourcePos) {
+            const wp0 = waypoints[0];
+            const wp1 = waypoints[1];
+            if (wp0 && wp1) {
+              waypoints[0] = this.adjustGatewayEndpoint(
+                wp0,
+                wp1,
+              sourcePos,
+                true // isSource
+              );
+              // No adjacent point adjustment needed - the intersection calculation
+              // preserves the original Y (or X) coordinate, maintaining orthogonality
+            }
+          }
+        }
+
+        // Adjust end point if target is a gateway
+        if (targetIsGateway && targetId) {
+          const targetPos = this.nodePositions.get(targetId);
+          if (targetPos) {
+            const lastIdx = waypoints.length - 1;
+            const prevIdx = lastIdx - 1;
+            const wpLast = waypoints[lastIdx];
+            const wpPrev = waypoints[prevIdx];
+            if (wpLast && wpPrev) {
+              waypoints[lastIdx] = this.adjustGatewayEndpoint(
+                wpLast,
+                wpPrev,
+              targetPos,
+                false // isSource
+              );
+              // No adjacent point adjustment needed - the intersection calculation
+              // preserves the original Y (or X) coordinate, maintaining orthogonality
+            }
+          }
+        }
+      }
     }
 
     const edgeModel: EdgeModel = {
@@ -917,8 +1147,8 @@ export class ModelBuilder {
     // Add label if present - center it on the edge
     if (edge.labels && edge.labels.length > 0) {
       const label = edge.labels[0];
-      const labelWidth = label.width ?? 50;
-      const labelHeight = label.height ?? 14;
+      const labelWidth = label?.width ?? 50;
+      const labelHeight = label?.height ?? 14;
 
       // Calculate edge midpoint for label placement
       const labelPos = this.calculateEdgeLabelPosition(waypoints, labelWidth, labelHeight);
@@ -956,18 +1186,21 @@ export class ModelBuilder {
     // Walk along the path to find the midpoint
     let accumulatedLength = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
-      const segmentLength = this.distance(waypoints[i], waypoints[i + 1]);
+      const wpCurrent = waypoints[i];
+      const wpNext = waypoints[i + 1];
+      if (!wpCurrent || !wpNext) continue;
+      const segmentLength = this.distance(wpCurrent, wpNext);
       const nextAccumulated = accumulatedLength + segmentLength;
 
       if (nextAccumulated >= halfLength) {
         // Midpoint is in this segment
         const ratio = (halfLength - accumulatedLength) / segmentLength;
-        const midX = waypoints[i].x + (waypoints[i + 1].x - waypoints[i].x) * ratio;
-        const midY = waypoints[i].y + (waypoints[i + 1].y - waypoints[i].y) * ratio;
+        const midX = wpCurrent.x + (wpNext.x - wpCurrent.x) * ratio;
+        const midY = wpCurrent.y + (wpNext.y - wpCurrent.y) * ratio;
 
         // Determine if segment is horizontal or vertical
-        const dx = waypoints[i + 1].x - waypoints[i].x;
-        const dy = waypoints[i + 1].y - waypoints[i].y;
+        const dx = wpNext.x - wpCurrent.x;
+        const dy = wpNext.y - wpCurrent.y;
 
         if (Math.abs(dy) < Math.abs(dx)) {
           // Horizontal segment - place label above the line
@@ -989,8 +1222,8 @@ export class ModelBuilder {
     // Fallback: use the geometric center
     const lastPoint = waypoints[waypoints.length - 1];
     return {
-      x: lastPoint.x - labelWidth / 2,
-      y: lastPoint.y - labelHeight - 4,
+      x: (lastPoint?.x ?? 0) - labelWidth / 2,
+      y: (lastPoint?.y ?? 0) - labelHeight - 4,
     };
   }
 
@@ -1000,7 +1233,11 @@ export class ModelBuilder {
   private calculatePathLength(waypoints: PointModel[]): number {
     let length = 0;
     for (let i = 0; i < waypoints.length - 1; i++) {
-      length += this.distance(waypoints[i], waypoints[i + 1]);
+      const wp1 = waypoints[i];
+      const wp2 = waypoints[i + 1];
+      if (wp1 && wp2) {
+        length += this.distance(wp1, wp2);
+      }
     }
     return length;
   }

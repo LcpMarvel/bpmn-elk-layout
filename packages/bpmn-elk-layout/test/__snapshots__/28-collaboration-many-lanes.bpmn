@@ -345,19 +345,19 @@
         <di:waypoint x="251" y="554.3333333333333" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_has_damage_di" bpmnElement="flow_has_damage">
-        <di:waypoint x="301" y="546" />
+        <di:waypoint x="292.66666666666674" y="546" />
         <di:waypoint x="331" y="546" />
         <di:waypoint x="331" y="506.66666666666663" />
         <di:waypoint x="411" y="506.66666666666663" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="311.3333333333333" y="488.66666666666663" width="50" height="14" />
+          <dc:Bounds x="307.1666666666667" y="488.66666666666663" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_no_damage_di" bpmnElement="flow_no_damage">
-        <di:waypoint x="301" y="562.6666666666666" />
+        <di:waypoint x="292.66666666666663" y="562.6666666666666" />
         <di:waypoint x="487" y="562.6666666666666" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="369" y="544.6666666666666" width="50" height="14" />
+          <dc:Bounds x="364.8333333333333" y="544.6666666666666" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_eng3_di" bpmnElement="flow_eng3">

@@ -233,7 +233,7 @@
         <di:waypoint x="222" y="64.5" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_parallel_order_di" bpmnElement="flow_parallel_order">
-        <di:waypoint x="272" y="77" />
+        <di:waypoint x="259.5" y="77" />
         <di:waypoint x="288" y="77" />
         <di:waypoint x="288" y="252" />
         <di:waypoint x="322" y="252" />
@@ -245,7 +245,7 @@
         <di:waypoint x="322" y="152" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_parallel_timer_di" bpmnElement="flow_parallel_timer">
-        <di:waypoint x="272" y="52" />
+        <di:waypoint x="259.5" y="52" />
         <di:waypoint x="308" y="52" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_order_process_di" bpmnElement="flow_order_process">
@@ -262,24 +262,24 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_order_to_join_di" bpmnElement="flow_order_to_join">
         <di:waypoint x="498" y="252" />
-        <di:waypoint x="508" y="252" />
-        <di:waypoint x="508" y="168.66666666666666" />
-        <di:waypoint x="518" y="168.66666666666666" />
+        <di:waypoint x="515" y="252" />
+        <di:waypoint x="515" y="168.66666666666666" />
+        <di:waypoint x="526.3333333333334" y="168.66666666666666" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_payment_to_join_di" bpmnElement="flow_payment_to_join">
         <di:waypoint x="498" y="152" />
-        <di:waypoint x="518" y="152" />
+        <di:waypoint x="526.3333333333333" y="152" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_join_to_exclusive_di" bpmnElement="flow_join_to_exclusive">
         <di:waypoint x="568" y="160.33333333333331" />
         <di:waypoint x="588" y="160.33333333333331" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_exclusive_cancel_di" bpmnElement="flow_exclusive_cancel">
-        <di:waypoint x="638" y="152" />
+        <di:waypoint x="629.6666666666667" y="152" />
         <di:waypoint x="688" y="152" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_exclusive_continue_di" bpmnElement="flow_exclusive_continue">
-        <di:waypoint x="638" y="168.66666666666666" />
+        <di:waypoint x="629.6666666666666" y="168.66666666666666" />
         <di:waypoint x="654" y="168.66666666666666" />
         <di:waypoint x="654" y="252" />
         <di:waypoint x="664" y="252" />

@@ -14,9 +14,8 @@ import type {
   ArtifactModel,
   ShapeModel,
   EdgeModel,
-  LaneSetInfo,
-  LaneInfo,
 } from '../transform/model-builder';
+import type { LaneSetInfo, LaneInfo } from '../transform/lane-resolver';
 import { BPMN_ELEMENT_MAP, EVENT_DEFINITION_MAP } from '../types/bpmn-constants';
 
 // Type definitions for bpmn-moddle elements
@@ -458,26 +457,26 @@ export class BpmnXmlGenerator {
    * Apply subprocess-specific properties
    */
   private applySubProcessProperties(bpmnElement: ModdleElement, props: Record<string, unknown>): void {
-    if (props.triggeredByEvent !== undefined) {
-      bpmnElement.triggeredByEvent = props.triggeredByEvent;
+    if (props['triggeredByEvent'] !== undefined) {
+      bpmnElement['triggeredByEvent'] = props['triggeredByEvent'];
     }
 
     // AdHoc SubProcess
-    if (props.adHocOrdering) {
-      bpmnElement.ordering = props.adHocOrdering;
+    if (props['adHocOrdering']) {
+      bpmnElement['ordering'] = props['adHocOrdering'];
     }
-    if (props.adHocCompletionCondition) {
-      bpmnElement.completionCondition = this.moddle.create('bpmn:FormalExpression', {
-        body: props.adHocCompletionCondition as string,
+    if (props['adHocCompletionCondition']) {
+      bpmnElement['completionCondition'] = this.moddle.create('bpmn:FormalExpression', {
+        body: props['adHocCompletionCondition'] as string,
       });
     }
-    if (props.cancelRemainingInstances !== undefined) {
-      bpmnElement.cancelRemainingInstances = props.cancelRemainingInstances;
+    if (props['cancelRemainingInstances'] !== undefined) {
+      bpmnElement['cancelRemainingInstances'] = props['cancelRemainingInstances'];
     }
 
     // Transaction
-    if (props.transactionProtocol) {
-      bpmnElement.protocol = props.transactionProtocol;
+    if (props['transactionProtocol']) {
+      bpmnElement['protocol'] = props['transactionProtocol'];
     }
   }
 
@@ -485,8 +484,8 @@ export class BpmnXmlGenerator {
    * Apply call activity properties
    */
   private applyCallActivityProperties(bpmnElement: ModdleElement, props: Record<string, unknown>): void {
-    if (props.calledElement) {
-      bpmnElement.calledElement = props.calledElement;
+    if (props['calledElement']) {
+      bpmnElement['calledElement'] = props['calledElement'];
     }
   }
 
@@ -494,12 +493,12 @@ export class BpmnXmlGenerator {
    * Apply sequence flow properties
    */
   private applySequenceFlowProperties(bpmnElement: ModdleElement, props: Record<string, unknown>): void {
-    bpmnElement.sourceRef = { id: props.sourceRef as string };
-    bpmnElement.targetRef = { id: props.targetRef as string };
+    bpmnElement['sourceRef'] = { id: props['sourceRef'] as string };
+    bpmnElement['targetRef'] = { id: props['targetRef'] as string };
 
-    if (props.conditionExpression) {
-      const condExpr = props.conditionExpression as ConditionExpressionProps;
-      bpmnElement.conditionExpression = this.moddle.create('bpmn:FormalExpression', {
+    if (props['conditionExpression']) {
+      const condExpr = props['conditionExpression'] as ConditionExpressionProps;
+      bpmnElement['conditionExpression'] = this.moddle.create('bpmn:FormalExpression', {
         language: condExpr.language,
         body: condExpr.body,
       });
@@ -512,7 +511,7 @@ export class BpmnXmlGenerator {
   private applyDataAssociations(bpmnElement: ModdleElement, element: FlowElementModel): void {
     // Add dataInputAssociations
     if (element.dataInputAssociations && element.dataInputAssociations.length > 0) {
-      bpmnElement.dataInputAssociations = element.dataInputAssociations.map((assoc) => {
+      bpmnElement['dataInputAssociations'] = element.dataInputAssociations.map((assoc) => {
         const dataInputAssoc = this.moddle.create('bpmn:DataInputAssociation', {
           id: assoc.id,
         });
@@ -524,7 +523,7 @@ export class BpmnXmlGenerator {
 
     // Add dataOutputAssociations
     if (element.dataOutputAssociations && element.dataOutputAssociations.length > 0) {
-      bpmnElement.dataOutputAssociations = element.dataOutputAssociations.map((assoc) => {
+      bpmnElement['dataOutputAssociations'] = element.dataOutputAssociations.map((assoc) => {
         const dataOutputAssoc = this.moddle.create('bpmn:DataOutputAssociation', {
           id: assoc.id,
         });
@@ -597,46 +596,46 @@ export class BpmnXmlGenerator {
     const props = artifact.properties;
 
     if (artifact.type === 'textAnnotation') {
-      bpmnArtifact.text = props.text as string | undefined;
-      bpmnArtifact.textFormat = props.textFormat as string | undefined;
+      bpmnArtifact['text'] = props['text'] as string | undefined;
+      bpmnArtifact['textFormat'] = props['textFormat'] as string | undefined;
     }
 
     if (artifact.type === 'dataObjectReference' || artifact.type === 'dataObject') {
-      if (props.isCollection !== undefined) {
-        bpmnArtifact.isCollection = props.isCollection;
+      if (props['isCollection'] !== undefined) {
+        bpmnArtifact['isCollection'] = props['isCollection'];
       }
-      if (props.dataState) {
-        const state = props.dataState as { name?: string };
-        bpmnArtifact.dataState = this.moddle.create('bpmn:DataState', {
+      if (props['dataState']) {
+        const state = props['dataState'] as { name?: string };
+        bpmnArtifact['dataState'] = this.moddle.create('bpmn:DataState', {
           name: state.name,
         });
       }
     }
 
     if (artifact.type === 'dataStoreReference') {
-      if (props.capacity !== undefined) {
-        bpmnArtifact.capacity = props.capacity;
+      if (props['capacity'] !== undefined) {
+        bpmnArtifact['capacity'] = props['capacity'];
       }
-      if (props.isUnlimited !== undefined) {
-        bpmnArtifact.isUnlimited = props.isUnlimited;
+      if (props['isUnlimited'] !== undefined) {
+        bpmnArtifact['isUnlimited'] = props['isUnlimited'];
       }
     }
 
     if (artifact.type === 'group') {
-      if (props.categoryValueRef) {
-        bpmnArtifact.categoryValueRef = { id: props.categoryValueRef as string };
+      if (props['categoryValueRef']) {
+        bpmnArtifact['categoryValueRef'] = { id: props['categoryValueRef'] as string };
       }
     }
 
     if (artifact.type === 'association') {
-      if (props.sourceRef) {
-        bpmnArtifact.sourceRef = { id: props.sourceRef as string };
+      if (props['sourceRef']) {
+        bpmnArtifact['sourceRef'] = { id: props['sourceRef'] as string };
       }
-      if (props.targetRef) {
-        bpmnArtifact.targetRef = { id: props.targetRef as string };
+      if (props['targetRef']) {
+        bpmnArtifact['targetRef'] = { id: props['targetRef'] as string };
       }
-      if (props.associationDirection) {
-        bpmnArtifact.associationDirection = props.associationDirection as string;
+      if (props['associationDirection']) {
+        bpmnArtifact['associationDirection'] = props['associationDirection'] as string;
       }
     }
 

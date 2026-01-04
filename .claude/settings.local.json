@@ -7,7 +7,8 @@
       "Skill(document-skills:skill-creator)",
       "Bash(chmod:*)",
       "Bash(.claude/skills/deepseek-bpmn-generator/generate.sh:*)",
-      "Bash(DEBUG=true bun run:*)"
+      "Bash(DEBUG=true bun run:*)",
+      "Bash(tree:*)"
     ]
   }
 }

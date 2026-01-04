@@ -196,19 +196,19 @@
         <di:waypoint x="308" y="60.33333333333333" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_approved_di" bpmnElement="flow_approved">
-        <di:waypoint x="358" y="52" />
+        <di:waypoint x="349.6666666666667" y="52" />
         <di:waypoint x="461" y="52" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="384.5" y="34" width="50" height="14" />
+          <dc:Bounds x="380.33333333333337" y="34" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_rejected_di" bpmnElement="flow_rejected">
-        <di:waypoint x="358" y="68.66666666666667" />
+        <di:waypoint x="349.66666666666663" y="68.66666666666667" />
         <di:waypoint x="381" y="68.66666666666667" />
         <di:waypoint x="381" y="152" />
         <di:waypoint x="461" y="152" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="327" y="131.83333333333331" width="50" height="14" />
+          <dc:Bounds x="327" y="127.66666666666663" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_4_di" bpmnElement="flow_4">

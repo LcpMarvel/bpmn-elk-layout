@@ -159,11 +159,13 @@ export class ReferenceResolver {
 
     if (!sourceRef || !targetRef) return;
 
+    const edgeType = edge.bpmn?.type;
+    const validTypes = ['sequenceFlow', 'messageFlow', 'dataInputAssociation', 'dataOutputAssociation', 'association'] as const;
     const edgeInfo: EdgeInfo = {
       id: edge.id,
       sourceRef,
       targetRef,
-      type: edge.bpmn?.type ?? 'sequenceFlow',
+      type: (validTypes.includes(edgeType as typeof validTypes[number]) ? edgeType : 'sequenceFlow') as EdgeInfo['type'],
     };
 
     this.allEdges.push(edgeInfo);

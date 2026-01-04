@@ -156,19 +156,19 @@
         <di:waypoint x="428" y="252" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_success_di" bpmnElement="flow_success">
-        <di:waypoint x="478" y="243.66666666666666" />
+        <di:waypoint x="469.66666666666663" y="243.66666666666666" />
         <di:waypoint x="574" y="243.66666666666666" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="501" y="225.66666666666666" width="50" height="14" />
+          <dc:Bounds x="496.83333333333326" y="225.66666666666666" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_fail_di" bpmnElement="flow_fail">
-        <di:waypoint x="478" y="260.33333333333337" />
+        <di:waypoint x="469.66666666666663" y="260.33333333333337" />
         <di:waypoint x="494" y="260.33333333333337" />
         <di:waypoint x="494" y="299.66666666666663" />
         <di:waypoint x="574" y="299.66666666666663" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="481.33333333333337" y="281.66666666666663" width="50" height="14" />
+          <dc:Bounds x="477.1666666666667" y="281.66666666666663" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_to_end_cancel_di" bpmnElement="flow_to_end_cancel">

@@ -238,15 +238,15 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_timeout_handler_di" bpmnElement="task_timeout_handler">
-        <dc:Bounds x="1110" y="558" width="100" height="80" />
+        <dc:Bounds x="1110" y="482" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1110" y="558" width="56" height="14" />
+          <dc:Bounds x="1110" y="482" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_reminder_di" bpmnElement="task_reminder">
-        <dc:Bounds x="1157" y="754" width="100" height="80" />
+        <dc:Bounds x="1157" y="602" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1157" y="754" width="56" height="14" />
+          <dc:Bounds x="1157" y="602" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gateway_final_di" bpmnElement="gateway_final">
@@ -265,9 +265,9 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_timeout_di" bpmnElement="end_timeout">
-        <dc:Bounds x="1230" y="580" width="36" height="36" />
+        <dc:Bounds x="1230" y="504" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1220" y="620" width="56" height="14" />
+          <dc:Bounds x="1220" y="544" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="start_timer_cron_di" bpmnElement="start_timer_cron">
@@ -290,25 +290,25 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_date_start_di" bpmnElement="flow_date_start">
         <di:waypoint x="48" y="264" />
-        <di:waypoint x="164" y="264" />
+        <di:waypoint x="169" y="264" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_cycle_start_di" bpmnElement="flow_cycle_start">
         <di:waypoint x="48" y="320" />
         <di:waypoint x="134" y="320" />
         <di:waypoint x="134" y="274" />
-        <di:waypoint x="164" y="274" />
+        <di:waypoint x="169" y="274" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_duration_start_di" bpmnElement="flow_duration_start">
         <di:waypoint x="48" y="376" />
         <di:waypoint x="144" y="376" />
         <di:waypoint x="144" y="284" />
-        <di:waypoint x="164" y="284" />
+        <di:waypoint x="179" y="284" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_cron_start_di" bpmnElement="flow_cron_start">
         <di:waypoint x="48" y="208" />
         <di:waypoint x="134" y="208" />
         <di:waypoint x="134" y="254" />
-        <di:waypoint x="164" y="254" />
+        <di:waypoint x="179" y="254" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_to_init_di" bpmnElement="flow_to_init">
         <di:waypoint x="214" y="269" />
@@ -374,23 +374,23 @@
         <di:waypoint x="1160" y="327" />
         <di:waypoint x="1160" y="347" />
         <di:waypoint x="1033" y="347" />
-        <di:waypoint x="1033" y="538" />
-        <di:waypoint x="1160" y="538" />
-        <di:waypoint x="1160" y="558" />
+        <di:waypoint x="1033" y="462" />
+        <di:waypoint x="1160" y="462" />
+        <di:waypoint x="1160" y="482" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_timeout_to_end_di" bpmnElement="flow_timeout_to_end">
-        <di:waypoint x="1210" y="598" />
-        <di:waypoint x="1220" y="598" />
-        <di:waypoint x="1220" y="598" />
-        <di:waypoint x="1230" y="598" />
+        <di:waypoint x="1210" y="522" />
+        <di:waypoint x="1220" y="522" />
+        <di:waypoint x="1220" y="522" />
+        <di:waypoint x="1230" y="522" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_reminder_boundary_di" bpmnElement="flow_reminder_boundary">
         <di:waypoint x="1207" y="327" />
         <di:waypoint x="1207" y="347" />
         <di:waypoint x="1033" y="347" />
-        <di:waypoint x="1033" y="734" />
-        <di:waypoint x="1207" y="734" />
-        <di:waypoint x="1207" y="754" />
+        <di:waypoint x="1033" y="582" />
+        <di:waypoint x="1207" y="582" />
+        <di:waypoint x="1207" y="602" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
