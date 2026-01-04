@@ -7,8 +7,7 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { ElkBpmnGraph, LayoutedGraph } from '../../types';
 import type { NodeWithBpmn } from '../../types/internal';
-
-const DEBUG = process.env.DEBUG === 'true';
+import { DEBUG } from '../../utils/debug';
 
 /**
  * Handler for merging layout results with original BPMN data

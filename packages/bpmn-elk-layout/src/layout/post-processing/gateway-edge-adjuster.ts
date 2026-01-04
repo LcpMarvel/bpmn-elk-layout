@@ -16,8 +16,8 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { Point, Bounds, NodeWithBpmn } from '../../types/internal';
 import type { ElkBpmnGraph } from '../../types';
-
-const DEBUG = process.env.DEBUG === 'true';
+import { DEBUG } from '../../utils/debug';
+import { distance, lineIntersection } from '../edge-routing/geometry-utils';
 
 interface GatewayInfo {
   id: string;
@@ -342,10 +342,10 @@ export class GatewayEdgeAdjuster {
     ];
 
     let closest = corners[0];
-    let minDist = this.distance(point, closest);
+    let minDist = distance(point, closest);
 
     for (let i = 1; i < corners.length; i++) {
-      const dist = this.distance(point, corners[i]);
+      const dist = distance(point, corners[i]);
       if (dist < minDist) {
         minDist = dist;
         closest = corners[i];
@@ -375,44 +375,13 @@ export class GatewayEdgeAdjuster {
 
     // Find intersection with each edge
     for (const [p1, p2] of edges) {
-      const intersection = this.lineIntersection(from, to, p1, p2);
+      const intersection = lineIntersection(from, to, p1, p2);
       if (intersection) {
         return intersection;
       }
     }
 
     return null;
-  }
-
-  /**
-   * Calculate intersection of two line segments
-   */
-  private lineIntersection(
-    p1: Point, p2: Point,
-    p3: Point, p4: Point
-  ): Point | null {
-    const denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-    if (Math.abs(denom) < 0.0001) return null; // Lines are parallel
-
-    const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
-    const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
-
-    // Check if intersection is within both line segments
-    if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-      return {
-        x: p1.x + ua * (p2.x - p1.x),
-        y: p1.y + ua * (p2.y - p1.y),
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Calculate distance between two points
-   */
-  private distance(p1: Point, p2: Point): number {
-    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
   }
 
   /**

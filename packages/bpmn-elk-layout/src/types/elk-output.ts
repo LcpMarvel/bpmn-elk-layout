@@ -17,21 +17,16 @@ import type {
   Artifact,
   Label,
 } from './elk-bpmn';
+import type { Point as InternalPoint, EdgeSection as InternalEdgeSection } from './internal';
 
 // ============================================================================
 // Layouted Types (with x, y coordinates)
 // ============================================================================
 
-export interface Point {
-  x: number;
-  y: number;
-}
+// Re-export Point and EdgeSection from internal for public API
+export type Point = InternalPoint;
 
-export interface EdgeSection {
-  id?: string;
-  startPoint: Point;
-  endPoint: Point;
-  bendPoints?: Point[];
+export interface EdgeSection extends InternalEdgeSection {
   incomingShape?: string;
   outgoingShape?: string;
   incomingSections?: string[];

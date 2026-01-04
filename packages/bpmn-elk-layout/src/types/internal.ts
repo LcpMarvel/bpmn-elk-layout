@@ -192,27 +192,8 @@ export interface NodeMoveInfo {
 }
 
 // ============================================================================
-// Constants
+// Re-exported Constants
 // ============================================================================
 
-/**
- * BPMN element types that are considered artifacts
- */
-export const ARTIFACT_TYPES = new Set([
-  'dataObject',
-  'dataObjectReference',
-  'dataStoreReference',
-  'dataInput',
-  'dataOutput',
-  'textAnnotation',
-]);
-
-/**
- * Group element type constant
- */
-export const GROUP_TYPE = 'group';
-
-/**
- * Debug flag from environment
- */
-export const DEBUG = typeof process !== 'undefined' && process.env?.DEBUG === 'true';
+// Re-export constants from bpmn-constants for backward compatibility
+export { ARTIFACT_TYPES_SET as ARTIFACT_TYPES, GROUP_TYPE } from './bpmn-constants';

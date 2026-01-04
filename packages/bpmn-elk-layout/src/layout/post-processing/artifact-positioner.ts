@@ -12,18 +12,14 @@ import {
   scoreRoute,
   findClearVerticalPath,
 } from '../edge-routing/geometry-utils';
+import { ARTIFACT_TYPES_SET } from '../../types/bpmn-constants';
+import { buildNodeMap } from '../../utils/node-map-builder';
 
 /**
  * Artifact types that should be repositioned above their associated tasks
+ * @deprecated Use ARTIFACT_TYPES_SET from bpmn-constants instead
  */
-export const ARTIFACT_TYPES = new Set([
-  'dataObject',
-  'dataObjectReference',
-  'dataStoreReference',
-  'dataInput',
-  'dataOutput',
-  'textAnnotation',
-]);
+export const ARTIFACT_TYPES = ARTIFACT_TYPES_SET;
 
 /**
  * Handler for artifact repositioning
@@ -98,16 +94,7 @@ export class ArtifactPositioner {
    */
   reposition(graph: ElkNode, artifactInfo: Map<string, ArtifactInfo>): void {
     // Build node map
-    const nodeMap = new Map<string, ElkNode>();
-    const buildNodeMap = (node: ElkNode) => {
-      nodeMap.set(node.id, node);
-      if (node.children) {
-        for (const child of node.children) {
-          buildNodeMap(child);
-        }
-      }
-    };
-    buildNodeMap(graph);
+    const nodeMap = buildNodeMap(graph);
 
     // Track horizontal offset for each task (for multiple artifacts)
     const taskInputOffsets = new Map<string, number>();
@@ -238,16 +225,7 @@ export class ArtifactPositioner {
     artifactInfo: Map<string, ArtifactInfo>
   ): void {
     // Build node map for position lookups
-    const nodeMap = new Map<string, ElkNode>();
-    const buildNodeMap = (node: ElkNode) => {
-      nodeMap.set(node.id, node);
-      if (node.children) {
-        for (const child of node.children) {
-          buildNodeMap(child);
-        }
-      }
-    };
-    buildNodeMap(graph);
+    const nodeMap = buildNodeMap(graph);
 
     // Collect all obstacles (non-artifact nodes)
     const obstacles: Obstacle[] = [];

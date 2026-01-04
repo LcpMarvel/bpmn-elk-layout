@@ -7,8 +7,7 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { Point, Bounds, NodeWithBpmn } from '../../types/internal';
 import { segmentCrossesNode } from './geometry-utils';
-
-const DEBUG = process.env?.['DEBUG'] === 'true';
+import { DEBUG } from '../../utils/debug';
 
 /**
  * Handler for edge crossing detection and fixing

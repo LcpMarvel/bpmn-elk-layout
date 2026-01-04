@@ -7,11 +7,11 @@
 import type { ElkNode } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, GroupInfo } from '../../types/internal';
+import { GROUP_TYPE } from '../../types/bpmn-constants';
+import { buildNodeMapWithParents } from '../../utils/node-map-builder';
 
-/**
- * Group element type constant
- */
-export const GROUP_TYPE = 'group';
+// Re-export GROUP_TYPE for backward compatibility
+export { GROUP_TYPE };
 
 /**
  * Handler for group repositioning
@@ -97,21 +97,7 @@ export class GroupPositioner {
     if (groupInfo.size === 0) return;
 
     // Build node map for position lookups
-    const nodeMap = new Map<string, ElkNode>();
-    const parentMap = new Map<string, ElkNode>(); // node id -> parent container
-
-    const buildNodeMap = (node: ElkNode, parent?: ElkNode) => {
-      nodeMap.set(node.id, node);
-      if (parent) {
-        parentMap.set(node.id, parent);
-      }
-      if (node.children) {
-        for (const child of node.children) {
-          buildNodeMap(child, node);
-        }
-      }
-    };
-    buildNodeMap(graph);
+    const [nodeMap, parentMap] = buildNodeMapWithParents(graph);
 
     // Process each group
     for (const [groupId, info] of groupInfo) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BoundaryEventHandler } from '../../../src/layout/post-processing/boundary-event-handler';
+import { BoundaryEventHandler } from '../../../src/layout/post-processing/boundary-event';
 import type { ElkBpmnGraph } from '../../../src/types';
 import type { ElkNode } from 'elkjs';
 

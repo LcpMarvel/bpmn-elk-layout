@@ -5,21 +5,34 @@
  * - Converting to ELK-compatible format
  * - Flattening pool/lane structures when needed for cross-pool edges
  * - Handling boundary events as siblings for proper edge routing
+ * - Identifying main flow nodes for layout priority
  */
 
 import type { ElkNode, ElkExtendedEdge, LayoutOptions } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
-import type { NodeWithBpmn } from '../../types/internal';
+import type { NodeWithBpmn, BoundaryEventInfo } from '../../types/internal';
 import { mergeElkOptions } from '../default-options';
+import { SizeCalculator } from '../size-calculator';
+import { DEBUG } from '../../utils/debug';
 
 /**
  * Handler for preparing graphs for ELK layout
  */
 export class ElkGraphPreparer {
+  private sizeCalculator: SizeCalculator;
+
+  constructor() {
+    this.sizeCalculator = new SizeCalculator();
+  }
+
   /**
    * Prepare the graph for ELK layout
    */
-  prepare(graph: ElkBpmnGraph, userOptions: Record<string, unknown> = {}): ElkNode {
+  prepare(
+    graph: ElkBpmnGraph,
+    userOptions: Record<string, unknown> = {},
+    boundaryEventTargetIds: Set<string> = new Set()
+  ): ElkNode {
     let layoutOptions = mergeElkOptions(userOptions as Record<string, string | number | boolean | undefined>, graph.layoutOptions);
 
     // Check if this graph contains a cross-pool collaboration
@@ -31,10 +44,13 @@ export class ElkGraphPreparer {
       };
     }
 
+    // Identify main flow nodes to give them layout priority
+    const mainFlowNodes = this.identifyMainFlowNodes(graph, boundaryEventTargetIds);
+
     return {
-      id: graph.id,
+      id: graph.id ?? 'root',
       layoutOptions: layoutOptions as LayoutOptions,
-      children: this.prepareChildrenForElk(graph.children),
+      children: this.prepareChildrenForElk(graph.children, boundaryEventTargetIds, mainFlowNodes),
     };
   }
 
@@ -65,6 +81,19 @@ export class ElkGraphPreparer {
     }
 
     return false;
+  }
+
+  /**
+   * Collect all boundary event target IDs from boundary event info
+   */
+  collectBoundaryEventTargetIds(boundaryEventInfo: Map<string, BoundaryEventInfo>): Set<string> {
+    const targetIds = new Set<string>();
+    for (const [_beId, info] of boundaryEventInfo) {
+      for (const targetId of info.targets) {
+        targetIds.add(targetId);
+      }
+    }
+    return targetIds;
   }
 
   /**
@@ -111,16 +140,105 @@ export class ElkGraphPreparer {
   }
 
   /**
+   * Identify main flow nodes - nodes that are in the primary path from start to end,
+   * not including boundary event branches.
+   * Main flow nodes should be prioritized in layout to stay at the top.
+   */
+  identifyMainFlowNodes(graph: ElkBpmnGraph, boundaryEventTargetIds: Set<string>): Set<string> {
+    const mainFlowNodes = new Set<string>();
+    const edgeMap = new Map<string, string[]>(); // source -> targets
+    const boundaryEventIds = new Set<string>();
+
+    // Collect all boundary event IDs and edges
+    const collectInfo = (node: NodeWithBpmn) => {
+      if (node.boundaryEvents) {
+        for (const be of node.boundaryEvents) {
+          boundaryEventIds.add(be.id);
+        }
+      }
+      if (node.edges) {
+        for (const edge of node.edges) {
+          const source = edge.sources?.[0];
+          const target = edge.targets?.[0];
+          if (source && target) {
+            if (!edgeMap.has(source)) {
+              edgeMap.set(source, []);
+            }
+            edgeMap.get(source)!.push(target);
+          }
+        }
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          collectInfo(child as NodeWithBpmn);
+        }
+      }
+    };
+
+    // Find start events
+    const findStartEvents = (node: NodeWithBpmn): string[] => {
+      const starts: string[] = [];
+      if (node.bpmn?.type === 'startEvent') {
+        starts.push(node.id);
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          starts.push(...findStartEvents(child as NodeWithBpmn));
+        }
+      }
+      return starts;
+    };
+
+    // Traverse from start events, following only non-boundary-event edges
+    const traverseMainFlow = (nodeId: string) => {
+      if (mainFlowNodes.has(nodeId)) return;
+      // Don't include boundary event targets as main flow
+      if (boundaryEventTargetIds.has(nodeId)) return;
+      // Don't include boundary events themselves
+      if (boundaryEventIds.has(nodeId)) return;
+
+      mainFlowNodes.add(nodeId);
+
+      const targets = edgeMap.get(nodeId) || [];
+      for (const targetId of targets) {
+        // Skip if this edge originates from a boundary event
+        if (!boundaryEventIds.has(nodeId)) {
+          traverseMainFlow(targetId);
+        }
+      }
+    };
+
+    for (const child of graph.children ?? []) {
+      collectInfo(child as NodeWithBpmn);
+    }
+
+    const startEvents = findStartEvents({ children: graph.children } as NodeWithBpmn);
+    for (const startId of startEvents) {
+      traverseMainFlow(startId);
+    }
+
+    if (DEBUG) {
+      console.log(`[BPMN] Main flow nodes: ${Array.from(mainFlowNodes).join(', ')}`);
+    }
+
+    return mainFlowNodes;
+  }
+
+  /**
    * Prepare children for ELK layout
    */
-  private prepareChildrenForElk(children: ElkBpmnGraph['children']): ElkNode[] {
+  private prepareChildrenForElk(
+    children: ElkBpmnGraph['children'],
+    boundaryEventTargetIds: Set<string> = new Set(),
+    mainFlowNodes: Set<string> = new Set()
+  ): ElkNode[] {
     if (!children) return [];
 
     const result: ElkNode[] = [];
 
     for (const child of children) {
       const node = child as unknown as NodeWithBpmn;
-      result.push(this.prepareNodeForElk(node));
+      result.push(this.prepareNodeForElk(node, boundaryEventTargetIds, mainFlowNodes));
 
       // Add boundary events as sibling nodes (not children of the task)
       // This allows ELK to route edges from boundary events correctly
@@ -141,8 +259,46 @@ export class ElkGraphPreparer {
   /**
    * Prepare a single node for ELK layout
    */
-  private prepareNodeForElk(node: NodeWithBpmn): ElkNode {
+  private prepareNodeForElk(
+    node: NodeWithBpmn,
+    boundaryEventTargetIds: Set<string> = new Set(),
+    mainFlowNodes: Set<string> = new Set()
+  ): ElkNode {
     let layoutOptions = node.layoutOptions as LayoutOptions | undefined;
+
+    // Add ELK layer constraints for start/end events to ensure proper flow direction
+    // startEvent should be in the first layer (leftmost in RIGHT direction)
+    // endEvent should be in the last layer (rightmost in RIGHT direction)
+    const nodeType = node.bpmn?.type;
+    if (nodeType === 'startEvent') {
+      layoutOptions = {
+        ...layoutOptions,
+        'elk.layered.layering.layerConstraint': 'FIRST',
+      } as LayoutOptions;
+    } else if (nodeType === 'endEvent') {
+      layoutOptions = {
+        ...layoutOptions,
+        'elk.layered.layering.layerConstraint': 'LAST',
+      } as LayoutOptions;
+    }
+
+    // Give main flow nodes higher priority so ELK keeps them aligned at the top
+    // This ensures the primary flow path is laid out first and stays in optimal position
+    if (mainFlowNodes.has(node.id)) {
+      layoutOptions = {
+        ...layoutOptions,
+        'elk.priority': '10',
+      } as LayoutOptions;
+    }
+
+    // Give boundary event targets lower priority so ELK prioritizes main flow layout
+    // This helps prevent exception branches from pulling main flow nodes out of alignment
+    if (boundaryEventTargetIds.has(node.id)) {
+      layoutOptions = {
+        ...layoutOptions,
+        'elk.priority': '0',
+      } as LayoutOptions;
+    }
 
     // For expanded subprocesses, add top padding for the label header
     const isExpandedSubprocess = node.bpmn?.isExpanded === true &&
@@ -164,6 +320,8 @@ export class ElkGraphPreparer {
     }
 
     // Check if this is a collaboration with multiple pools and cross-pool sequence flow edges
+    // Only flatten nodes when there are actual sequenceFlow edges crossing pools
+    // (messageFlow edges are normal for collaborations and don't require flattening)
     const isCollaboration = node.bpmn?.type === 'collaboration';
     const hasMultiplePools = isCollaboration &&
       ((node.children as NodeWithBpmn[] | undefined)?.filter((c) => c.bpmn?.type === 'participant').length ?? 0) > 1;
@@ -177,6 +335,7 @@ export class ElkGraphPreparer {
 
     if (isCollaboration && hasCrossPoolSequenceFlows && hasMultiplePools) {
       // For collaborations with cross-pool edges, flatten all pool contents
+      // to collaboration level for unified layout
       layoutOptions = {
         ...layoutOptions,
         'elk.algorithm': 'layered',
@@ -194,7 +353,7 @@ export class ElkGraphPreparer {
 
       // Flatten all pool contents to collaboration level
       const childNodes: ElkNode[] = [];
-      this.extractNodesFromPools(node.children as NodeWithBpmn[], childNodes);
+      this.extractNodesFromPools(node.children as NodeWithBpmn[], childNodes, boundaryEventTargetIds, mainFlowNodes);
       elkNode.children = childNodes;
 
       // Copy edges to ELK format
@@ -211,19 +370,27 @@ export class ElkGraphPreparer {
       (node.children as NodeWithBpmn[] | undefined)?.some((c) => c.bpmn?.type === 'lane');
 
     if (hasLanes) {
+      // For pools with lanes, use a different layout strategy:
+      // - Use partitioning to create horizontal swim lanes (rows, not columns)
+      // - Set direction to RIGHT for flow within lanes
+      // - Use 'elk.partitioning.activate' with vertical partitions
       layoutOptions = {
         ...layoutOptions,
         'elk.algorithm': 'layered',
         'elk.direction': 'RIGHT',
+        // Remove partitioning - we'll handle lane stacking differently
         'elk.partitioning.activate': 'false',
+        // Add padding for lane header (left side)
         'elk.padding': '[top=12,left=30,bottom=12,right=12]',
         'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       } as LayoutOptions;
     } else if (isPool) {
+      // For pools without lanes, still add left padding for pool label
       layoutOptions = {
         ...layoutOptions,
         'elk.algorithm': 'layered',
         'elk.direction': 'RIGHT',
+        // Add padding for pool header (left side) - 55px to accommodate vertical label
         'elk.padding': '[top=12,left=55,bottom=12,right=12]',
       } as LayoutOptions;
     }
@@ -231,6 +398,8 @@ export class ElkGraphPreparer {
     // Check if this is a lane
     const isLane = node.bpmn?.type === 'lane';
     if (isLane) {
+      // For lanes, don't set separate layout algorithm - let parent pool handle layout
+      // Just set padding for content spacing
       layoutOptions = {
         'elk.padding': '[top=12,left=12,bottom=12,right=12]',
       } as LayoutOptions;
@@ -243,18 +412,20 @@ export class ElkGraphPreparer {
       layoutOptions,
     };
 
-    // Process children
+    // Process children (including boundary events as siblings)
     if (node.children && node.children.length > 0) {
       const childNodes: ElkNode[] = [];
 
+      // For pools with lanes, flatten all lane contents to pool level for unified layout
+      // This allows ELK to consider cross-lane edges when positioning nodes
       if (hasLanes) {
-        // Flatten lane contents to pool level for unified layout
-        this.extractNodesFromLanes(node.children as NodeWithBpmn[], childNodes);
+        // Recursively extract all flow nodes from lanes (including nested lanes)
+        this.extractNodesFromLanes(node.children as NodeWithBpmn[], childNodes, boundaryEventTargetIds, mainFlowNodes);
       } else {
         // Normal processing for non-lane containers
         for (const child of node.children) {
           const childNode = child as NodeWithBpmn;
-          childNodes.push(this.prepareNodeForElk(childNode));
+          childNodes.push(this.prepareNodeForElk(childNode, boundaryEventTargetIds, mainFlowNodes));
 
           // Add boundary events as siblings
           if (childNode.boundaryEvents && childNode.boundaryEvents.length > 0) {
@@ -276,11 +447,11 @@ export class ElkGraphPreparer {
       elkNode.edges = this.prepareEdges(node.edges);
     }
 
-    // Process labels
+    // Process labels - ensure all labels have dimensions (ELK requires this)
     if (node.labels && node.labels.length > 0) {
       elkNode.labels = node.labels.map((l) => ({
         text: l.text,
-        width: l.width ?? this.estimateLabelWidth(l.text),
+        width: l.width ?? this.sizeCalculator.estimateLabelWidth(l.text),
         height: l.height ?? 14,
       }));
     }
@@ -318,10 +489,17 @@ export class ElkGraphPreparer {
 
   /**
    * Extract all flow nodes from pools to flatten them for unified layout
+   * This is used for collaborations with cross-pool edges
    */
-  private extractNodesFromPools(children: NodeWithBpmn[], result: ElkNode[]): void {
+  private extractNodesFromPools(
+    children: NodeWithBpmn[],
+    result: ElkNode[],
+    boundaryEventTargetIds: Set<string> = new Set(),
+    mainFlowNodes: Set<string> = new Set()
+  ): void {
     for (const child of children) {
       if (child.bpmn?.type === 'participant') {
+        // Check if this is an empty/black box pool
         const isEmpty = !child.children || child.children.length === 0;
 
         if (isEmpty) {
@@ -332,16 +510,18 @@ export class ElkGraphPreparer {
             height: child.height ?? 60,
           });
         } else {
+          // Extract nodes from this pool
           // Check if pool has lanes
           const hasLanes = child.children!.some((c) => (c as NodeWithBpmn).bpmn?.type === 'lane');
           if (hasLanes) {
-            this.extractNodesFromLanes(child.children! as NodeWithBpmn[], result);
+            this.extractNodesFromLanes(child.children! as NodeWithBpmn[], result, boundaryEventTargetIds, mainFlowNodes);
           } else {
             // Direct children of pool (no lanes)
             for (const poolChild of child.children!) {
               const node = poolChild as NodeWithBpmn;
-              result.push(this.prepareNodeForElk(node));
+              result.push(this.prepareNodeForElk(node, boundaryEventTargetIds, mainFlowNodes));
 
+              // Add boundary events as siblings
               if (node.boundaryEvents && node.boundaryEvents.length > 0) {
                 for (const be of node.boundaryEvents) {
                   result.push({
@@ -359,19 +539,26 @@ export class ElkGraphPreparer {
   }
 
   /**
-   * Extract all flow nodes from lanes (including nested lanes)
+   * Recursively extract all flow nodes from lanes (including nested lanes)
+   * and add them to the result array for unified ELK layout
    */
-  private extractNodesFromLanes(children: NodeWithBpmn[], result: ElkNode[]): void {
+  private extractNodesFromLanes(
+    children: NodeWithBpmn[],
+    result: ElkNode[],
+    boundaryEventTargetIds: Set<string> = new Set(),
+    mainFlowNodes: Set<string> = new Set()
+  ): void {
     for (const child of children) {
       if (child.bpmn?.type === 'lane') {
         // Recursively extract from nested lanes
         if (child.children) {
-          this.extractNodesFromLanes(child.children as NodeWithBpmn[], result);
+          this.extractNodesFromLanes(child.children as NodeWithBpmn[], result, boundaryEventTargetIds, mainFlowNodes);
         }
       } else {
         // Non-lane node - add to result
-        result.push(this.prepareNodeForElk(child));
+        result.push(this.prepareNodeForElk(child, boundaryEventTargetIds, mainFlowNodes));
 
+        // Add boundary events as siblings
         if (child.boundaryEvents && child.boundaryEvents.length > 0) {
           for (const be of child.boundaryEvents) {
             result.push({
@@ -383,24 +570,5 @@ export class ElkGraphPreparer {
         }
       }
     }
-  }
-
-  /**
-   * Estimate label width based on text content
-   */
-  private estimateLabelWidth(text?: string): number {
-    if (!text) return 50;
-
-    let width = 0;
-    for (const char of text) {
-      // CJK characters are wider
-      if (char.charCodeAt(0) > 255) {
-        width += 14;
-      } else {
-        width += 7;
-      }
-    }
-
-    return Math.max(30, Math.min(width, 200));
   }
 }

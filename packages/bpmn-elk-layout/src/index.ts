@@ -95,5 +95,7 @@ export {
   GATEWAY_TYPES,
   SUBPROCESS_TYPES,
   ARTIFACT_TYPES,
+  ARTIFACT_TYPES_SET,
+  GROUP_TYPE,
   FLOW_TYPES,
 } from './types/bpmn-constants';

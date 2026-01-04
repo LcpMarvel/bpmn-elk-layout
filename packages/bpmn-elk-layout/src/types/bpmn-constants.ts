@@ -190,6 +190,24 @@ export const ARTIFACT_TYPES = [
   'group',
 ] as const;
 
+/**
+ * Group element type constant
+ */
+export const GROUP_TYPE = 'group';
+
+/**
+ * Set of artifact types for efficient lookup in layout processing.
+ * Note: Excludes 'group' because groups are handled separately by GroupPositioner.
+ */
+export const ARTIFACT_TYPES_SET = new Set([
+  'dataObject',
+  'dataObjectReference',
+  'dataStoreReference',
+  'dataInput',
+  'dataOutput',
+  'textAnnotation',
+]);
+
 export const FLOW_TYPES = [
   'sequenceFlow',
   'messageFlow',

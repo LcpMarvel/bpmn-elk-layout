@@ -42,18 +42,43 @@ bun run test -- -u       # Update snapshots
 ```
 src/
 ├── converter.ts              # BpmnElkLayout main class (public API)
+├── utils/
+│   ├── debug.ts              # Unified DEBUG constant
+│   └── node-map-builder.ts   # Shared node map building utilities
 ├── layout/
-│   ├── elk-layouter.ts       # Main layout orchestrator
-│   ├── size-defaults.ts      # BPMN element size definitions
+│   ├── elk-layouter.ts       # Main layout orchestrator (slim coordinator)
+│   ├── size-calculator.ts    # BPMN element size calculation
 │   ├── default-options.ts    # ELK configuration
 │   ├── preparation/          # Graph preparation and result merging
+│   │   ├── elk-graph-preparer.ts  # Convert BPMN to ELK format
+│   │   └── result-merger.ts       # Merge layout results
+│   ├── normalization/        # Main flow position normalization
+│   │   ├── main-flow-normalizer.ts  # Normalize main flow positions
+│   │   └── gateway-propagator.ts    # Propagate gateway movements
 │   ├── post-processing/      # BPMN-specific layout adjustments
+│   │   ├── boundary-event/   # Boundary event handling (split module)
+│   │   │   ├── collector.ts        # Collect boundary event info
+│   │   │   ├── mover.ts            # Node movement identification
+│   │   │   └── edge-recalculator.ts # Edge recalculation
+│   │   ├── artifact-positioner.ts
+│   │   ├── group-positioner.ts
+│   │   ├── lane-arranger.ts
+│   │   └── pool-arranger.ts
 │   └── edge-routing/         # Edge routing and geometry utilities
-├── transform/                # Model building, reference/lane resolution
+│       ├── edge-fixer.ts
+│       ├── geometry-utils.ts
+│       └── gateway-endpoint-adjuster.ts
+├── transform/
+│   ├── model-builder.ts      # BPMN model construction
+│   ├── model-types.ts        # Model type definitions
+│   ├── diagram-builder.ts    # Shape and Edge construction
+│   ├── reference-resolver.ts
+│   └── lane-resolver.ts
 ├── generators/               # BPMN XML generation
 └── types/
     ├── elk-bpmn.ts           # Input schema (public)
     ├── elk-output.ts         # Output types (public)
+    ├── bpmn-constants.ts     # Shared constants (ARTIFACT_TYPES, GROUP_TYPE, etc.)
     └── internal.ts           # Internal layout types (geometry, info)
 ```
 
