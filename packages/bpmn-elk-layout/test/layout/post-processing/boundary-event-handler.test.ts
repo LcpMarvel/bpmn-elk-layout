@@ -124,6 +124,21 @@ describe('BoundaryEventHandler', () => {
         ],
       };
 
+      // sizedGraph with BPMN type information
+      const sizedGraph: ElkBpmnGraph = {
+        id: 'root',
+        children: [
+          {
+            id: 'process1',
+            bpmn: { type: 'process' },
+            children: [
+              { id: 'task1', bpmn: { type: 'task' } },
+              { id: 'errorHandler', bpmn: { type: 'task' } },
+            ],
+          },
+        ],
+      } as unknown as ElkBpmnGraph;
+
       const boundaryEventInfo = new Map([
         ['be1', {
           attachedToRef: 'task1',
@@ -133,7 +148,7 @@ describe('BoundaryEventHandler', () => {
         }],
       ]);
 
-      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo);
+      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo, sizedGraph);
 
       expect(movedNodes.size).toBe(1);
       expect(movedNodes.has('errorHandler')).toBe(true);
@@ -177,6 +192,22 @@ describe('BoundaryEventHandler', () => {
         ],
       };
 
+      // sizedGraph with BPMN type information
+      const sizedGraph: ElkBpmnGraph = {
+        id: 'root',
+        children: [
+          {
+            id: 'process1',
+            bpmn: { type: 'process' },
+            children: [
+              { id: 'task1', bpmn: { type: 'task' } },
+              { id: 'handler1', bpmn: { type: 'task' } },
+              { id: 'handler2', bpmn: { type: 'task' } },
+            ],
+          },
+        ],
+      } as unknown as ElkBpmnGraph;
+
       const boundaryEventInfo = new Map([
         ['be1', {
           attachedToRef: 'task1',
@@ -192,7 +223,7 @@ describe('BoundaryEventHandler', () => {
         }],
       ]);
 
-      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo);
+      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo, sizedGraph);
 
       expect(movedNodes.size).toBe(2);
       expect(movedNodes.has('handler1')).toBe(true);
@@ -213,6 +244,20 @@ describe('BoundaryEventHandler', () => {
         ],
       };
 
+      // sizedGraph with BPMN type information
+      const sizedGraph: ElkBpmnGraph = {
+        id: 'root',
+        children: [
+          {
+            id: 'process1',
+            bpmn: { type: 'process' },
+            children: [
+              { id: 'task1', bpmn: { type: 'task' } },
+            ],
+          },
+        ],
+      } as unknown as ElkBpmnGraph;
+
       const boundaryEventInfo = new Map([
         ['be1', {
           attachedToRef: 'task1',
@@ -222,7 +267,7 @@ describe('BoundaryEventHandler', () => {
         }],
       ]);
 
-      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo);
+      const movedNodes = handler.identifyNodesToMove(graph, boundaryEventInfo, sizedGraph);
       expect(movedNodes.size).toBe(0);
     });
   });

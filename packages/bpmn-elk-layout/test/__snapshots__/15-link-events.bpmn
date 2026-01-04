@@ -113,216 +113,216 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_link_events" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_link_events" bpmnElement="process_link_events">
       <bpmndi:BPMNShape id="process_link_events_di" bpmnElement="process_link_events">
-        <dc:Bounds x="12" y="12" width="582" height="538" />
+        <dc:Bounds x="12" y="12" width="582" height="672" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
-        <dc:Bounds x="12" y="268" width="36" height="36" />
+        <dc:Bounds x="12" y="46.5" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="15" y="308" width="30" height="14" />
+          <dc:Bounds x="15" y="86.5" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_receive_order_di" bpmnElement="task_receive_order">
-        <dc:Bounds x="88" y="246" width="100" height="80" />
+        <dc:Bounds x="88" y="24.5" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="246" width="56" height="14" />
+          <dc:Bounds x="88" y="24.5" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gateway_order_type_di" bpmnElement="gateway_order_type">
-        <dc:Bounds x="242.5" y="261" width="50" height="50" />
+        <dc:Bounds x="242.5" y="39.5" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="239.5" y="243" width="56" height="14" />
+          <dc:Bounds x="239.5" y="21.5" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_standard_process_di" bpmnElement="task_standard_process">
-        <dc:Bounds x="408" y="333.5" width="100" height="80" />
+        <dc:Bounds x="408" y="112" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="408" y="333.5" width="56" height="14" />
+          <dc:Bounds x="408" y="112" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_to_approval_di" bpmnElement="throw_link_to_approval">
-        <dc:Bounds x="528" y="355.5" width="36" height="36" />
+        <dc:Bounds x="528" y="134" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="525" y="395.5" width="42" height="14" />
+          <dc:Bounds x="525" y="174" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_express_process_di" bpmnElement="task_express_process">
-        <dc:Bounds x="408" y="433.5" width="100" height="80" />
+        <dc:Bounds x="408" y="212" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="408" y="433.5" width="56" height="14" />
+          <dc:Bounds x="408" y="212" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_to_shipping_di" bpmnElement="throw_link_to_shipping">
-        <dc:Bounds x="528" y="455.5" width="36" height="36" />
+        <dc:Bounds x="528" y="234" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="525" y="495.5" width="42" height="14" />
+          <dc:Bounds x="525" y="274" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_vip_process_di" bpmnElement="task_vip_process">
-        <dc:Bounds x="408" y="233.5" width="100" height="80" />
+        <dc:Bounds x="408" y="12" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="408" y="233.5" width="49" height="14" />
+          <dc:Bounds x="408" y="12" width="49" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_to_complete_di" bpmnElement="throw_link_to_complete">
-        <dc:Bounds x="528" y="255.5" width="36" height="36" />
+        <dc:Bounds x="528" y="34" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="525" y="295.5" width="42" height="14" />
+          <dc:Bounds x="525" y="74" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="catch_link_approval_di" bpmnElement="catch_link_approval">
-        <dc:Bounds x="12" y="468" width="36" height="36" />
+        <dc:Bounds x="12" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2" y="508" width="56" height="14" />
+          <dc:Bounds x="2" y="642" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_approval_di" bpmnElement="task_approval">
-        <dc:Bounds x="88" y="446" width="100" height="80" />
+        <dc:Bounds x="88" y="580" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="446" width="56" height="14" />
+          <dc:Bounds x="88" y="580" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_from_approval_di" bpmnElement="throw_link_from_approval">
-        <dc:Bounds x="208" y="468" width="36" height="36" />
+        <dc:Bounds x="208" y="602" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="205" y="508" width="42" height="14" />
+          <dc:Bounds x="205" y="642" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="catch_link_shipping_di" bpmnElement="catch_link_shipping">
-        <dc:Bounds x="12" y="68" width="36" height="36" />
+        <dc:Bounds x="12" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2" y="108" width="56" height="14" />
+          <dc:Bounds x="2" y="542" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_shipping_di" bpmnElement="task_shipping">
-        <dc:Bounds x="88" y="46" width="100" height="80" />
+        <dc:Bounds x="88" y="480" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="46" width="56" height="14" />
+          <dc:Bounds x="88" y="480" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_notify_di" bpmnElement="task_notify">
-        <dc:Bounds x="208" y="46" width="100" height="80" />
+        <dc:Bounds x="208" y="480" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="208" y="46" width="56" height="14" />
+          <dc:Bounds x="208" y="480" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_to_complete_2_di" bpmnElement="throw_link_to_complete_2">
-        <dc:Bounds x="338" y="68" width="36" height="36" />
+        <dc:Bounds x="338" y="502" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="335" y="108" width="42" height="14" />
+          <dc:Bounds x="335" y="542" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="catch_link_complete_di" bpmnElement="catch_link_complete">
-        <dc:Bounds x="12" y="368" width="36" height="36" />
+        <dc:Bounds x="12" y="290" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2" y="408" width="56" height="14" />
+          <dc:Bounds x="2" y="330" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_finalize_di" bpmnElement="task_finalize">
-        <dc:Bounds x="88" y="346" width="100" height="80" />
+        <dc:Bounds x="88" y="268" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="346" width="56" height="14" />
+          <dc:Bounds x="88" y="268" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_1_di" bpmnElement="end_1">
-        <dc:Bounds x="208" y="368" width="36" height="36" />
+        <dc:Bounds x="528" y="290" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="211" y="408" width="30" height="14" />
+          <dc:Bounds x="531" y="330" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="throw_link_multi_target_1_di" bpmnElement="throw_link_multi_target_1">
-        <dc:Bounds x="22" y="12" width="36" height="36" />
+        <dc:Bounds x="22" y="446" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="22.5" y="52" width="35" height="14" />
+          <dc:Bounds x="22.5" y="486" width="35" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="catch_link_multi_target_di" bpmnElement="catch_link_multi_target">
-        <dc:Bounds x="12" y="168" width="36" height="36" />
+        <dc:Bounds x="12" y="390" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2" y="208" width="56" height="14" />
+          <dc:Bounds x="2" y="430" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_multi_handler_di" bpmnElement="task_multi_handler">
-        <dc:Bounds x="88" y="146" width="100" height="80" />
+        <dc:Bounds x="88" y="368" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="146" width="56" height="14" />
+          <dc:Bounds x="88" y="368" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_start_di" bpmnElement="flow_start">
-        <di:waypoint x="48" y="286" />
-        <di:waypoint x="88" y="286" />
+        <di:waypoint x="48" y="64.5" />
+        <di:waypoint x="88" y="64.5" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_to_gateway_di" bpmnElement="flow_to_gateway">
-        <di:waypoint x="188" y="286" />
-        <di:waypoint x="242.5" y="286" />
+        <di:waypoint x="188" y="64.5" />
+        <di:waypoint x="242.5" y="64.5" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_standard_di" bpmnElement="flow_standard">
-        <di:waypoint x="292.5" y="286" />
-        <di:waypoint x="328" y="286" />
-        <di:waypoint x="328" y="373.5" />
-        <di:waypoint x="408" y="373.5" />
+        <di:waypoint x="292.5" y="64.5" />
+        <di:waypoint x="328" y="64.5" />
+        <di:waypoint x="328" y="152" />
+        <di:waypoint x="408" y="152" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="274" y="345" width="50" height="14" />
+          <dc:Bounds x="274" y="123.5" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_express_di" bpmnElement="flow_express">
-        <di:waypoint x="280" y="298.5" />
-        <di:waypoint x="318" y="298.5" />
-        <di:waypoint x="318" y="473.5" />
-        <di:waypoint x="408" y="473.5" />
+        <di:waypoint x="280" y="77" />
+        <di:waypoint x="318" y="77" />
+        <di:waypoint x="318" y="252" />
+        <di:waypoint x="408" y="252" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="264" y="405" width="50" height="14" />
+          <dc:Bounds x="264" y="183.5" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_vip_di" bpmnElement="flow_vip">
-        <di:waypoint x="280" y="273.5" />
-        <di:waypoint x="408" y="273.5" />
+        <di:waypoint x="280" y="52" />
+        <di:waypoint x="408" y="52" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="319" y="255.5" width="50" height="14" />
+          <dc:Bounds x="319" y="34" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_standard_to_link_di" bpmnElement="flow_standard_to_link">
-        <di:waypoint x="508" y="373.5" />
-        <di:waypoint x="528" y="373.5" />
+        <di:waypoint x="508" y="152" />
+        <di:waypoint x="528" y="152" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_express_to_link_di" bpmnElement="flow_express_to_link">
-        <di:waypoint x="508" y="473.5" />
-        <di:waypoint x="528" y="473.5" />
+        <di:waypoint x="508" y="252" />
+        <di:waypoint x="528" y="252" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_vip_to_link_di" bpmnElement="flow_vip_to_link">
-        <di:waypoint x="508" y="273.5" />
-        <di:waypoint x="528" y="273.5" />
+        <di:waypoint x="508" y="52" />
+        <di:waypoint x="528" y="52" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_catch_approval_di" bpmnElement="flow_catch_approval">
-        <di:waypoint x="48" y="486" />
-        <di:waypoint x="88" y="486" />
+        <di:waypoint x="48" y="620" />
+        <di:waypoint x="88" y="620" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_approval_to_link_di" bpmnElement="flow_approval_to_link">
-        <di:waypoint x="188" y="486" />
-        <di:waypoint x="208" y="486" />
+        <di:waypoint x="188" y="620" />
+        <di:waypoint x="208" y="620" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_catch_shipping_di" bpmnElement="flow_catch_shipping">
-        <di:waypoint x="48" y="86" />
-        <di:waypoint x="88" y="86" />
+        <di:waypoint x="48" y="520" />
+        <di:waypoint x="88" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_shipping_notify_di" bpmnElement="flow_shipping_notify">
-        <di:waypoint x="188" y="86" />
-        <di:waypoint x="208" y="86" />
+        <di:waypoint x="188" y="520" />
+        <di:waypoint x="208" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_notify_to_link_di" bpmnElement="flow_notify_to_link">
-        <di:waypoint x="308" y="86" />
-        <di:waypoint x="338" y="86" />
+        <di:waypoint x="308" y="520" />
+        <di:waypoint x="338" y="520" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_catch_complete_di" bpmnElement="flow_catch_complete">
-        <di:waypoint x="48" y="386" />
-        <di:waypoint x="88" y="386" />
+        <di:waypoint x="48" y="308" />
+        <di:waypoint x="88" y="308" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_finalize_end_di" bpmnElement="flow_finalize_end">
-        <di:waypoint x="188" y="386" />
-        <di:waypoint x="208" y="386" />
+        <di:waypoint x="188" y="308" />
+        <di:waypoint x="528" y="308" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_catch_multi_di" bpmnElement="flow_catch_multi">
-        <di:waypoint x="48" y="186" />
-        <di:waypoint x="88" y="186" />
+        <di:waypoint x="48" y="408" />
+        <di:waypoint x="88" y="408" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

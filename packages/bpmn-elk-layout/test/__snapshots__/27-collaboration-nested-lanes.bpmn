@@ -47,7 +47,7 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_collab_nested_lanes" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_collab_nested_lanes" bpmnElement="collaboration_1">
       <bpmndi:BPMNShape id="collaboration_1_di" bpmnElement="collaboration_1">
-        <dc:Bounds x="12" y="12" width="562" height="480" />
+        <dc:Bounds x="12" y="12" width="574" height="492" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_org_di" bpmnElement="pool_org" isHorizontal="true">
         <dc:Bounds x="0" y="0" width="562" height="480" />

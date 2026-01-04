@@ -164,7 +164,7 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_cross_pool_patterns" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_cross_pool_patterns" bpmnElement="collaboration_cross_pool">
       <bpmndi:BPMNShape id="collaboration_cross_pool_di" bpmnElement="collaboration_cross_pool">
-        <dc:Bounds x="12" y="12" width="1211" height="1216" />
+        <dc:Bounds x="12" y="12" width="1223" height="1228" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="participant_customer_di" bpmnElement="participant_customer" isHorizontal="true">
         <dc:Bounds x="0" y="0" width="1211" height="273.33333333333337" />

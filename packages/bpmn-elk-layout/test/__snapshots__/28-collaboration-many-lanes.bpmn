@@ -147,7 +147,7 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_employee_resignation" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_employee_resignation" bpmnElement="collaboration_resignation">
       <bpmndi:BPMNShape id="collaboration_resignation_di" bpmnElement="collaboration_resignation">
-        <dc:Bounds x="12" y="12" width="857" height="1146.3333333333333" />
+        <dc:Bounds x="12" y="12" width="869" height="1158.3333333333333" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_employee_di" bpmnElement="pool_employee" isHorizontal="true">
         <dc:Bounds x="0" y="0" width="857" height="252.66666666666666" />
@@ -270,28 +270,28 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_custodian_di" bpmnElement="pool_custodian" isHorizontal="true">
-        <dc:Bounds x="0" y="654.6666666666666" width="857" height="211.66666666666666" />
+        <dc:Bounds x="0" y="654.6666666666666" width="857" height="211.66666666666669" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="start_custodian_di" bpmnElement="start_custodian">
-        <dc:Bounds x="55" y="756.3333333333333" width="36" height="36" />
+        <dc:Bounds x="55" y="728.6666666666666" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="45" y="796.3333333333333" width="56" height="14" />
+          <dc:Bounds x="45" y="768.6666666666666" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_fill_transfer_di" bpmnElement="task_fill_transfer">
-        <dc:Bounds x="131" y="734.3333333333333" width="100" height="80" />
+        <dc:Bounds x="131" y="706.6666666666666" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="131" y="734.3333333333333" width="70" height="14" />
+          <dc:Bounds x="131" y="706.6666666666666" width="70" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_custodian_di" bpmnElement="end_custodian">
-        <dc:Bounds x="251" y="706.6666666666666" width="36" height="36" />
+        <dc:Bounds x="251" y="778.3333333333333" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="254" y="746.6666666666666" width="30" height="14" />
+          <dc:Bounds x="254" y="818.3333333333333" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="data_transfer_ref_di" bpmnElement="data_transfer_ref">
-        <dc:Bounds x="246" y="664.3333333333333" width="36" height="50" />
+        <dc:Bounds x="246" y="636.6666666666666" width="36" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_hr_di" bpmnElement="pool_hr" isHorizontal="true">
         <dc:Bounds x="0" y="866.3333333333333" width="857" height="280" />
@@ -381,20 +381,20 @@
         <di:waypoint x="759" y="540.6666666666666" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_c1_di" bpmnElement="flow_c1">
-        <di:waypoint x="91" y="774.3333333333333" />
-        <di:waypoint x="131" y="774.3333333333333" />
+        <di:waypoint x="91" y="746.6666666666666" />
+        <di:waypoint x="131" y="746.6666666666666" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_c2_di" bpmnElement="flow_c2">
-        <di:waypoint x="231" y="761" />
-        <di:waypoint x="241" y="761" />
-        <di:waypoint x="241" y="724.6666666666666" />
-        <di:waypoint x="251" y="724.6666666666666" />
+        <di:waypoint x="231" y="760" />
+        <di:waypoint x="241" y="760" />
+        <di:waypoint x="241" y="796.3333333333333" />
+        <di:waypoint x="251" y="796.3333333333333" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="data_flow_transfer_di" bpmnElement="data_flow_transfer">
-        <di:waypoint x="181" y="734.3333333333333" />
-        <di:waypoint x="181" y="724.3333333333333" />
-        <di:waypoint x="264" y="724.3333333333333" />
-        <di:waypoint x="264" y="714.3333333333333" />
+        <di:waypoint x="181" y="706.6666666666666" />
+        <di:waypoint x="181" y="696.6666666666666" />
+        <di:waypoint x="264" y="696.6666666666666" />
+        <di:waypoint x="264" y="686.6666666666666" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="msgflow_resignation_request_di" bpmnElement="msgflow_resignation_request">
         <di:waypoint x="161" y="200.66666666666666" />
@@ -432,11 +432,11 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="msgflow_transfer_request_di" bpmnElement="msgflow_transfer_request">
         <di:waypoint x="505" y="574.6666666666666" />
-        <di:waypoint x="505" y="736.3333333333333" />
-        <di:waypoint x="73" y="736.3333333333333" />
-        <di:waypoint x="73" y="756.3333333333333" />
+        <di:waypoint x="505" y="708.6666666666666" />
+        <di:waypoint x="73" y="708.6666666666666" />
+        <di:waypoint x="73" y="728.6666666666666" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="334.8333333333333" y="718.3333333333333" width="50" height="14" />
+          <dc:Bounds x="321" y="690.6666666666666" width="50" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="msgflow_process_complete_di" bpmnElement="msgflow_process_complete">

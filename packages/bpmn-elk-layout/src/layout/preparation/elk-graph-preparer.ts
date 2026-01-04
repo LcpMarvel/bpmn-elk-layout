@@ -149,11 +149,18 @@ export class ElkGraphPreparer {
       (node.bpmn?.type === 'subProcess' || node.bpmn?.type === 'transaction' ||
        node.bpmn?.type === 'adHocSubProcess' || node.bpmn?.type === 'eventSubProcess');
 
+    // Save user-specified padding to preserve it
+    const userPadding = layoutOptions?.['elk.padding'];
+
     if (isExpandedSubprocess) {
       layoutOptions = {
-        ...layoutOptions,
         'elk.padding': '[top=30,left=12,bottom=30,right=12]',
+        ...layoutOptions,
       } as LayoutOptions;
+      // Restore user padding if specified (it takes precedence)
+      if (userPadding) {
+        layoutOptions['elk.padding'] = userPadding;
+      }
     }
 
     // Check if this is a collaboration with multiple pools and cross-pool sequence flow edges

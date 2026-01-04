@@ -190,6 +190,29 @@ When modifying layout algorithms, follow these core principles:
    - Only stack vertically when horizontal space is insufficient
    - Align targets with their source boundary events
 
+## Design Decisions
+
+### ELK-First Layout Strategy
+
+**Decision**: Rely on ELK's native layout capabilities as much as possible. Avoid custom post-processing that "fixes" ELK's output.
+
+**Rationale**:
+- ELK is a mature, well-tested graph layout engine
+- Custom post-processing introduces complexity and potential bugs
+- ELK constraints (layerConstraint, priority, etc.) can achieve most layout goals
+- Edge routing is handled automatically when ELK knows the correct node positions
+
+**Implementation**:
+- Use `elk.layered.layering.layerConstraint: 'FIRST'` for startEvent
+- Use `elk.layered.layering.layerConstraint: 'LAST'` for endEvent
+- Use `elk.priority` to influence node placement (lower priority for exception branches)
+- Minimize post-processing to only BPMN-specific adjustments that ELK cannot handle (e.g., boundary event visual positioning on parent node border)
+
+**When to add post-processing**:
+- Only when ELK fundamentally cannot express the constraint
+- Examples: boundary event attachment points, lane visual stacking, pool arrangement
+- NOT for: main flow direction, node ordering, edge routing
+
 ## Key Dependencies
 
 - `elkjs` - Graph layout engine

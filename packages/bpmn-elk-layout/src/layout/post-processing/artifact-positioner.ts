@@ -57,6 +57,12 @@ export class ArtifactPositioner {
 
           if (!sourceId || !targetId) continue;
 
+          // Skip artifact-to-artifact associations (e.g., between two dataStores)
+          // These should not be used for positioning
+          if (artifactIds.has(sourceId) && artifactIds.has(targetId)) {
+            continue;
+          }
+
           // Data input association: artifact -> task
           if (edgeType === 'dataInputAssociation' || edgeType === 'association') {
             if (artifactIds.has(sourceId)) {

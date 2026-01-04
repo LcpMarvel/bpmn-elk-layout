@@ -52,7 +52,7 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_collab_msgflows" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_collab_msgflows" bpmnElement="collaboration_1">
       <bpmndi:BPMNShape id="collaboration_1_di" bpmnElement="collaboration_1">
-        <dc:Bounds x="12" y="12" width="425" height="391" />
+        <dc:Bounds x="12" y="12" width="437" height="403" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="pool_client_di" bpmnElement="pool_client" isHorizontal="true">
         <dc:Bounds x="0" y="0" width="425" height="207" />

@@ -157,9 +157,9 @@
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_rejected_di" bpmnElement="end_rejected">
-        <dc:Bounds x="581" y="134" width="36" height="36" />
+        <dc:Bounds x="1073" y="134" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="584" y="174" width="30" height="14" />
+          <dc:Bounds x="1076" y="174" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="process_reusable_approval_di" bpmnElement="process_reusable_approval">
@@ -233,7 +233,7 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_9_di" bpmnElement="flow_9">
         <di:waypoint x="561" y="152" />
-        <di:waypoint x="581" y="152" />
+        <di:waypoint x="1073" y="152" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="sub_flow_1_di" bpmnElement="sub_flow_1">
         <di:waypoint x="48" y="52" />
