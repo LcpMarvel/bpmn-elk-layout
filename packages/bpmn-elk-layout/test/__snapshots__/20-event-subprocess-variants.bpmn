@@ -5,20 +5,6 @@
   <bpmn:error id="err_system" name="系统错误" errorCode="SYS_ERR_001" />
   <bpmn:escalation id="esc_timeout" name="超时升级" escalationCode="ESC_TIMEOUT" />
   <bpmn:process id="process_event_subprocess_variants" name="事件子流程变体测试" isExecutable="true">
-    <bpmn:startEvent id="start_main" name="开始">
-      <bpmn:outgoing>main_flow_1</bpmn:outgoing>
-    </bpmn:startEvent>
-    <bpmn:userTask id="task_main_1" name="主要任务1">
-      <bpmn:incoming>main_flow_1</bpmn:incoming>
-      <bpmn:outgoing>main_flow_2</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:serviceTask id="task_main_2" name="主要任务2">
-      <bpmn:incoming>main_flow_2</bpmn:incoming>
-      <bpmn:outgoing>main_flow_3</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:endEvent id="end_main" name="正常结束">
-      <bpmn:incoming>main_flow_3</bpmn:incoming>
-    </bpmn:endEvent>
     <bpmn:subProcess id="event_subprocess_message" name="消息事件子流程" triggeredByEvent="true">
       <bpmn:startEvent id="evtsub_msg_start" name="消息触发">
         <bpmn:outgoing>evtsub_msg_flow_1</bpmn:outgoing>
@@ -113,242 +99,203 @@
       <bpmn:sequenceFlow id="evtsub_error_flow_1" sourceRef="evtsub_error_start" targetRef="evtsub_error_task" />
       <bpmn:sequenceFlow id="evtsub_error_flow_2" sourceRef="evtsub_error_task" targetRef="evtsub_error_end" />
     </bpmn:subProcess>
-    <bpmn:sequenceFlow id="main_flow_1" sourceRef="start_main" targetRef="task_main_1" />
-    <bpmn:sequenceFlow id="main_flow_2" sourceRef="task_main_1" targetRef="task_main_2" />
-    <bpmn:sequenceFlow id="main_flow_3" sourceRef="task_main_2" targetRef="end_main" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_event_subprocess_variants" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_event_subprocess_variants" bpmnElement="process_event_subprocess_variants">
       <bpmndi:BPMNShape id="process_event_subprocess_variants_di" bpmnElement="process_event_subprocess_variants">
-        <dc:Bounds x="12" y="12" width="612" height="1020" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="start_main_di" bpmnElement="start_main">
-        <dc:Bounds x="248" y="34" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="251" y="74" width="30" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_main_1_di" bpmnElement="task_main_1">
-        <dc:Bounds x="304" y="12" width="100" height="80" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="304" y="12" width="63" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_main_2_di" bpmnElement="task_main_2">
-        <dc:Bounds x="424" y="12" width="100" height="80" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="424" y="12" width="63" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="end_main_di" bpmnElement="end_main">
-        <dc:Bounds x="544" y="34" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="534" y="74" width="56" height="14" />
-        </bpmndi:BPMNLabel>
+        <dc:Bounds x="12" y="12" width="296" height="964" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_message_di" bpmnElement="event_subprocess_message" isExpanded="true">
-        <dc:Bounds x="22" y="332" width="252" height="140" />
+        <dc:Bounds x="22" y="172" width="252" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="22" y="332" width="119" height="14" />
+          <dc:Bounds x="22" y="172" width="119" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_msg_start_di" bpmnElement="evtsub_msg_start">
-        <dc:Bounds x="42" y="394" width="36" height="36" />
+        <dc:Bounds x="42" y="234" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="45" y="434" width="30" height="14" />
+          <dc:Bounds x="45" y="274" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_msg_task_di" bpmnElement="evtsub_msg_task">
-        <dc:Bounds x="98" y="372" width="100" height="80" />
+        <dc:Bounds x="98" y="212" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="98" y="372" width="56" height="14" />
+          <dc:Bounds x="98" y="212" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_msg_end_di" bpmnElement="evtsub_msg_end">
-        <dc:Bounds x="218" y="394" width="36" height="36" />
+        <dc:Bounds x="218" y="234" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="221" y="434" width="30" height="14" />
+          <dc:Bounds x="221" y="274" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_timer_di" bpmnElement="event_subprocess_timer" isExpanded="true">
-        <dc:Bounds x="15.5" y="548" width="265" height="140" />
+        <dc:Bounds x="15.5" y="492" width="265" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="15.5" y="548" width="119" height="14" />
+          <dc:Bounds x="15.5" y="492" width="119" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_timer_start_di" bpmnElement="evtsub_timer_start">
-        <dc:Bounds x="35.5" y="610" width="36" height="36" />
+        <dc:Bounds x="35.5" y="554" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="29" y="650" width="49" height="14" />
+          <dc:Bounds x="29" y="594" width="49" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_timer_task_di" bpmnElement="evtsub_timer_task">
-        <dc:Bounds x="104.5" y="588" width="100" height="80" />
+        <dc:Bounds x="104.5" y="532" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="104.5" y="588" width="56" height="14" />
+          <dc:Bounds x="104.5" y="532" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_timer_end_di" bpmnElement="evtsub_timer_end">
-        <dc:Bounds x="224.5" y="610" width="36" height="36" />
+        <dc:Bounds x="224.5" y="554" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="227.5" y="650" width="30" height="14" />
+          <dc:Bounds x="227.5" y="594" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_signal_di" bpmnElement="event_subprocess_signal" isExpanded="true">
-        <dc:Bounds x="22" y="868" width="252" height="140" />
+        <dc:Bounds x="22" y="12" width="252" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="22" y="868" width="105" height="14" />
+          <dc:Bounds x="22" y="12" width="105" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_signal_start_di" bpmnElement="evtsub_signal_start">
-        <dc:Bounds x="42" y="930" width="36" height="36" />
+        <dc:Bounds x="42" y="74" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="45" y="970" width="30" height="14" />
+          <dc:Bounds x="45" y="114" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_signal_task_di" bpmnElement="evtsub_signal_task">
-        <dc:Bounds x="98" y="908" width="100" height="80" />
+        <dc:Bounds x="98" y="52" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="98" y="908" width="56" height="14" />
+          <dc:Bounds x="98" y="52" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_signal_end_di" bpmnElement="evtsub_signal_end">
-        <dc:Bounds x="218" y="930" width="36" height="36" />
+        <dc:Bounds x="218" y="74" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="221" y="970" width="30" height="14" />
+          <dc:Bounds x="221" y="114" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_escalation_di" bpmnElement="event_subprocess_escalation" isExpanded="true">
-        <dc:Bounds x="22" y="708" width="252" height="140" />
+        <dc:Bounds x="22" y="652" width="252" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="22" y="708" width="105" height="14" />
+          <dc:Bounds x="22" y="652" width="105" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_escalation_start_di" bpmnElement="evtsub_escalation_start">
-        <dc:Bounds x="42" y="770" width="36" height="36" />
+        <dc:Bounds x="42" y="714" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="45" y="810" width="30" height="14" />
+          <dc:Bounds x="45" y="754" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_escalation_task_di" bpmnElement="evtsub_escalation_task">
-        <dc:Bounds x="98" y="748" width="100" height="80" />
+        <dc:Bounds x="98" y="692" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="98" y="748" width="56" height="14" />
+          <dc:Bounds x="98" y="692" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_escalation_end_di" bpmnElement="evtsub_escalation_end">
-        <dc:Bounds x="218" y="770" width="36" height="36" />
+        <dc:Bounds x="218" y="714" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="221" y="810" width="30" height="14" />
+          <dc:Bounds x="221" y="754" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_conditional_di" bpmnElement="event_subprocess_conditional" isExpanded="true">
-        <dc:Bounds x="19" y="12" width="258" height="140" />
+        <dc:Bounds x="19" y="812" width="258" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="19" y="12" width="119" height="14" />
+          <dc:Bounds x="19" y="812" width="119" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_conditional_start_di" bpmnElement="evtsub_conditional_start">
-        <dc:Bounds x="39" y="74" width="36" height="36" />
+        <dc:Bounds x="39" y="874" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="36" y="114" width="42" height="14" />
+          <dc:Bounds x="36" y="914" width="42" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_conditional_task_di" bpmnElement="evtsub_conditional_task">
-        <dc:Bounds x="101" y="52" width="100" height="80" />
+        <dc:Bounds x="101" y="852" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="101" y="52" width="56" height="14" />
+          <dc:Bounds x="101" y="852" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_conditional_end_di" bpmnElement="evtsub_conditional_end">
-        <dc:Bounds x="221" y="74" width="36" height="36" />
+        <dc:Bounds x="221" y="874" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="224" y="114" width="30" height="14" />
+          <dc:Bounds x="224" y="914" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="event_subprocess_error_di" bpmnElement="event_subprocess_error" isExpanded="true">
-        <dc:Bounds x="12" y="172" width="272" height="140" />
+        <dc:Bounds x="12" y="332" width="272" height="140" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="12" y="172" width="105" height="14" />
+          <dc:Bounds x="12" y="332" width="105" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_error_start_di" bpmnElement="evtsub_error_start">
-        <dc:Bounds x="32" y="234" width="36" height="36" />
+        <dc:Bounds x="32" y="394" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="22" y="274" width="56" height="14" />
+          <dc:Bounds x="22" y="434" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_error_task_di" bpmnElement="evtsub_error_task">
-        <dc:Bounds x="108" y="212" width="100" height="80" />
+        <dc:Bounds x="108" y="372" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="108" y="212" width="56" height="14" />
+          <dc:Bounds x="108" y="372" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="evtsub_error_end_di" bpmnElement="evtsub_error_end">
-        <dc:Bounds x="228" y="234" width="36" height="36" />
+        <dc:Bounds x="228" y="394" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="231" y="274" width="30" height="14" />
+          <dc:Bounds x="231" y="434" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="evtsub_msg_flow_1_di" bpmnElement="evtsub_msg_flow_1">
-        <di:waypoint x="78" y="412" />
-        <di:waypoint x="98" y="412" />
+        <di:waypoint x="78" y="252" />
+        <di:waypoint x="98" y="252" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_msg_flow_2_di" bpmnElement="evtsub_msg_flow_2">
-        <di:waypoint x="198" y="412" />
-        <di:waypoint x="218" y="412" />
+        <di:waypoint x="198" y="252" />
+        <di:waypoint x="218" y="252" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_timer_flow_1_di" bpmnElement="evtsub_timer_flow_1">
-        <di:waypoint x="71.5" y="628" />
-        <di:waypoint x="104.5" y="628" />
+        <di:waypoint x="71.5" y="572" />
+        <di:waypoint x="104.5" y="572" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_timer_flow_2_di" bpmnElement="evtsub_timer_flow_2">
-        <di:waypoint x="204.5" y="628" />
-        <di:waypoint x="224.5" y="628" />
+        <di:waypoint x="204.5" y="572" />
+        <di:waypoint x="224.5" y="572" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_signal_flow_1_di" bpmnElement="evtsub_signal_flow_1">
-        <di:waypoint x="78" y="948" />
-        <di:waypoint x="98" y="948" />
+        <di:waypoint x="78" y="92" />
+        <di:waypoint x="98" y="92" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_signal_flow_2_di" bpmnElement="evtsub_signal_flow_2">
-        <di:waypoint x="198" y="948" />
-        <di:waypoint x="218" y="948" />
+        <di:waypoint x="198" y="92" />
+        <di:waypoint x="218" y="92" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_escalation_flow_1_di" bpmnElement="evtsub_escalation_flow_1">
-        <di:waypoint x="78" y="788" />
-        <di:waypoint x="98" y="788" />
+        <di:waypoint x="78" y="732" />
+        <di:waypoint x="98" y="732" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_escalation_flow_2_di" bpmnElement="evtsub_escalation_flow_2">
-        <di:waypoint x="198" y="788" />
-        <di:waypoint x="218" y="788" />
+        <di:waypoint x="198" y="732" />
+        <di:waypoint x="218" y="732" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_conditional_flow_1_di" bpmnElement="evtsub_conditional_flow_1">
-        <di:waypoint x="75" y="92" />
-        <di:waypoint x="101" y="92" />
+        <di:waypoint x="75" y="892" />
+        <di:waypoint x="101" y="892" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_conditional_flow_2_di" bpmnElement="evtsub_conditional_flow_2">
-        <di:waypoint x="201" y="92" />
-        <di:waypoint x="221" y="92" />
+        <di:waypoint x="201" y="892" />
+        <di:waypoint x="221" y="892" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_error_flow_1_di" bpmnElement="evtsub_error_flow_1">
-        <di:waypoint x="68" y="252" />
-        <di:waypoint x="108" y="252" />
+        <di:waypoint x="68" y="412" />
+        <di:waypoint x="108" y="412" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="evtsub_error_flow_2_di" bpmnElement="evtsub_error_flow_2">
-        <di:waypoint x="208" y="252" />
-        <di:waypoint x="228" y="252" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="main_flow_1_di" bpmnElement="main_flow_1">
-        <di:waypoint x="284" y="52" />
-        <di:waypoint x="304" y="52" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="main_flow_2_di" bpmnElement="main_flow_2">
-        <di:waypoint x="404" y="52" />
-        <di:waypoint x="424" y="52" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="main_flow_3_di" bpmnElement="main_flow_3">
-        <di:waypoint x="524" y="52" />
-        <di:waypoint x="544" y="52" />
+        <di:waypoint x="208" y="412" />
+        <di:waypoint x="228" y="412" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

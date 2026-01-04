@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_choreography" targetNamespace="http://example.com/test-choreography" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
+  <bpmn:message id="msg_order_request" name="订单请求" />
+  <bpmn:message id="msg_order_confirmation" name="订单确认" />
+  <bpmn:message id="msg_payment_request" name="支付请求" />
+  <bpmn:message id="msg_payment_confirmation" name="支付确认" />
+  <bpmn:message id="msg_shipping_notification" name="发货通知" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_choreography" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_choreography" bpmnElement="definitions_choreography">
+      <bpmndi:BPMNShape id="choreography_order_process_di" bpmnElement="choreography_order_process">
+        <dc:Bounds x="12" y="12" width="1265" height="284" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_start_di" bpmnElement="choreo_start">
+        <dc:Bounds x="12" y="62.33333333333333" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="15" y="102.33333333333333" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_task_place_order_di" bpmnElement="choreo_task_place_order">
+        <dc:Bounds x="68" y="20.33333333333333" width="150" height="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="68" y="20.33333333333333" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_task_confirm_order_di" bpmnElement="choreo_task_confirm_order">
+        <dc:Bounds x="238" y="20.33333333333333" width="150" height="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="238" y="20.33333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_gateway_payment_di" bpmnElement="choreo_gateway_payment">
+        <dc:Bounds x="408" y="55.33333333333333" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="401.5" y="37.33333333333333" width="63" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_task_online_payment_di" bpmnElement="choreo_task_online_payment">
+        <dc:Bounds x="561" y="152" width="150" height="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="561" y="152" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_task_cod_payment_di" bpmnElement="choreo_task_cod_payment">
+        <dc:Bounds x="561" y="12" width="150" height="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="561" y="12" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_gateway_merge_di" bpmnElement="choreo_gateway_merge">
+        <dc:Bounds x="731" y="55.33333333333333" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_sub_shipping_di" bpmnElement="choreo_sub_shipping">
+        <dc:Bounds x="801" y="18.33333333333333" width="396" height="124" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="801" y="18.33333333333333" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub_choreo_start_di" bpmnElement="sub_choreo_start">
+        <dc:Bounds x="12" y="44" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub_choreo_task_ship_di" bpmnElement="sub_choreo_task_ship">
+        <dc:Bounds x="68" y="12" width="120" height="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="68" y="12" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub_choreo_task_notify_di" bpmnElement="sub_choreo_task_notify">
+        <dc:Bounds x="208" y="12" width="120" height="100" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="208" y="12" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sub_choreo_end_di" bpmnElement="sub_choreo_end">
+        <dc:Bounds x="348" y="44" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="choreo_end_di" bpmnElement="choreo_end">
+        <dc:Bounds x="1217" y="62.33333333333333" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1220" y="102.33333333333333" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="sub_flow_1_di" bpmnElement="sub_flow_1">
+        <di:waypoint x="48" y="62" />
+        <di:waypoint x="68" y="62" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="sub_flow_2_di" bpmnElement="sub_flow_2">
+        <di:waypoint x="188" y="62" />
+        <di:waypoint x="208" y="62" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="sub_flow_3_di" bpmnElement="sub_flow_3">
+        <di:waypoint x="328" y="62" />
+        <di:waypoint x="348" y="62" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_1_di" bpmnElement="choreo_flow_1">
+        <di:waypoint x="48" y="80.33333333333333" />
+        <di:waypoint x="68" y="80.33333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_2_di" bpmnElement="choreo_flow_2">
+        <di:waypoint x="218" y="80.33333333333333" />
+        <di:waypoint x="238" y="80.33333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_3_di" bpmnElement="choreo_flow_3">
+        <di:waypoint x="388" y="80.33333333333333" />
+        <di:waypoint x="408" y="80.33333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_4a_di" bpmnElement="choreo_flow_4a">
+        <di:waypoint x="449.6666666666667" y="88.66666666666666" />
+        <di:waypoint x="481" y="88.66666666666666" />
+        <di:waypoint x="481" y="212" />
+        <di:waypoint x="561" y="212" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="427" y="167.66666666666669" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_4b_di" bpmnElement="choreo_flow_4b">
+        <di:waypoint x="449.6666666666667" y="72" />
+        <di:waypoint x="561" y="72" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="480.33333333333337" y="54" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_5a_di" bpmnElement="choreo_flow_5a">
+        <di:waypoint x="711" y="212" />
+        <di:waypoint x="721" y="212" />
+        <di:waypoint x="721" y="88.66666666666666" />
+        <di:waypoint x="739.3333333333334" y="88.66666666666666" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_5b_di" bpmnElement="choreo_flow_5b">
+        <di:waypoint x="711" y="72" />
+        <di:waypoint x="739.3333333333334" y="72" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_6_di" bpmnElement="choreo_flow_6">
+        <di:waypoint x="781" y="80.33333333333333" />
+        <di:waypoint x="801" y="80.33333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="choreo_flow_7_di" bpmnElement="choreo_flow_7">
+        <di:waypoint x="1197" y="80.33333333333333" />
+        <di:waypoint x="1217" y="80.33333333333333" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

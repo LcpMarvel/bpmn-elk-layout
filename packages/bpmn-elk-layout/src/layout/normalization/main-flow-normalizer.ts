@@ -194,6 +194,53 @@ export class MainFlowNormalizer {
       }
     }
 
+    // Fix overlapping endEvents at the same X position
+    // Group endEvents by X position and adjust Y to prevent overlaps
+    const endEventsByX = new Map<number, ElkNode[]>();
+    for (const endNode of endEventNodes) {
+      const x = endNode.x ?? 0;
+      if (!endEventsByX.has(x)) {
+        endEventsByX.set(x, []);
+      }
+      endEventsByX.get(x)!.push(endNode);
+    }
+
+    // Track nodes that were adjusted for overlap (need edge updates)
+    const adjustedEndEvents = new Map<string, number>(); // nodeId -> new Y position
+
+    const MIN_SPACING = 50; // Minimum spacing between endEvents
+    for (const [x, nodesAtX] of endEventsByX) {
+      if (nodesAtX.length <= 1) continue;
+
+      // Sort by Y position
+      nodesAtX.sort((a, b) => (a.y ?? 0) - (b.y ?? 0));
+
+      // Check for overlaps and adjust
+      for (let i = 1; i < nodesAtX.length; i++) {
+        const prevNode = nodesAtX[i - 1];
+        const currNode = nodesAtX[i];
+        const prevBottom = (prevNode.y ?? 0) + (prevNode.height ?? 36);
+        const currTop = currNode.y ?? 0;
+
+        if (currTop < prevBottom + MIN_SPACING) {
+          // Move current node down to avoid overlap
+          const newY = prevBottom + MIN_SPACING;
+          currNode.y = newY;
+          adjustedEndEvents.set(currNode.id, newY);
+          if (DEBUG) {
+            console.log(`[BPMN] Adjusted overlapping endEvent ${currNode.id} at x=${x}: y=${currNode.y}`);
+          }
+        }
+      }
+    }
+
+    // Update edges that connect to adjusted endEvents
+    // Track which edges had their endpoint updated (so we skip endpoint update later, but still update source side)
+    const edgesWithAdjustedEndpoint = new Set<string>();
+    if (adjustedEndEvents.size > 0) {
+      this.updateEdgesForAdjustedEndEvents(graph, adjustedEndEvents, nodeMap, edgesWithAdjustedEndpoint);
+    }
+
     // Calculate target Y for downstream nodes (converging gateway and after)
     // The gateway should be positioned below the main flow
     const mainFlowBottom = Math.max(...upstreamMainFlow.map(n => (n.y ?? 0) + (n.height ?? 80)));
@@ -237,7 +284,8 @@ export class MainFlowNormalizer {
     }
 
     // Update edges that connect main flow nodes
-    this.updateEdgesAfterNormalization(graph, [...upstreamMainFlow, ...downstreamMainFlow], offsetY);
+    // For edges with adjusted endpoints, only update source side (startPoint and early bendPoints)
+    this.updateEdgesAfterNormalization(graph, [...upstreamMainFlow, ...downstreamMainFlow], offsetY, edgesWithAdjustedEndpoint);
   }
 
   /**
@@ -425,10 +473,77 @@ export class MainFlowNormalizer {
   /**
    * Update edges after normalization to adjust waypoints
    */
+  /**
+   * Update edges that connect to endEvents that were adjusted for overlap
+   */
+  private updateEdgesForAdjustedEndEvents(
+    graph: ElkNode,
+    adjustedEndEvents: Map<string, number>,
+    nodeMap: Map<string, ElkNode>,
+    edgesWithAdjustedEndpoint: Set<string>
+  ): void {
+    const updateEdges = (node: ElkNode) => {
+      if (node.edges) {
+        for (const edge of node.edges) {
+          const targetId = edge.targets?.[0];
+          if (targetId && adjustedEndEvents.has(targetId)) {
+            const targetNode = nodeMap.get(targetId);
+            if (!targetNode) continue;
+
+            // Calculate new endpoint Y: center of the adjusted endEvent
+            const newTargetY = (targetNode.y ?? 0) + (targetNode.height ?? 36) / 2;
+
+            if (edge.sections) {
+              for (const section of edge.sections) {
+                // Also update last bendPoint if the last segment is horizontal
+                // (i.e., last bendPoint and endPoint have same Y)
+                if (section.bendPoints && section.bendPoints.length > 0 && section.endPoint) {
+                  const lastBend = section.bendPoints[section.bendPoints.length - 1];
+                  const oldEndY = section.endPoint.y;
+
+                  // If last segment is horizontal (same Y), update both bendPoint and endpoint
+                  if (Math.abs(lastBend.y - oldEndY) < 1) {
+                    lastBend.y = newTargetY;
+                    section.endPoint.y = newTargetY;
+                    edgesWithAdjustedEndpoint.add(edge.id);
+                    if (DEBUG) {
+                      console.log(`[BPMN] Updated edge ${edge.id} last bendPoint and endpoint to y=${newTargetY}`);
+                    }
+                  } else {
+                    // Last segment is vertical, just update endpoint
+                    section.endPoint.y = newTargetY;
+                    edgesWithAdjustedEndpoint.add(edge.id);
+                    if (DEBUG) {
+                      console.log(`[BPMN] Updated edge ${edge.id} endpoint to y=${newTargetY}`);
+                    }
+                  }
+                } else if (section.endPoint) {
+                  // No bendPoints, just update endpoint
+                  section.endPoint.y = newTargetY;
+                  edgesWithAdjustedEndpoint.add(edge.id);
+                  if (DEBUG) {
+                    console.log(`[BPMN] Updated edge ${edge.id} endpoint to y=${newTargetY}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          updateEdges(child);
+        }
+      }
+    };
+    updateEdges(graph);
+  }
+
   private updateEdgesAfterNormalization(
     graph: ElkNode,
     movedNodes: ElkNode[],
-    offsetY: number
+    offsetY: number,
+    edgesWithAdjustedEndpoint: Set<string> = new Set()
   ): void {
     const movedNodeIds = new Set(movedNodes.map(n => n.id));
 
@@ -439,19 +554,26 @@ export class MainFlowNormalizer {
           const targetId = edge.targets?.[0];
           const sourceMoved = sourceId && movedNodeIds.has(sourceId);
           const targetMoved = targetId && movedNodeIds.has(targetId);
+          const endpointAlreadyAdjusted = edgesWithAdjustedEndpoint.has(edge.id);
 
-          // If both source and target moved, shift all waypoints
+          // If both source and target moved
           if (sourceMoved && targetMoved && edge.sections) {
             for (const section of edge.sections) {
+              // Always update startPoint
               if (section.startPoint) {
                 section.startPoint.y -= offsetY;
               }
-              if (section.endPoint) {
+              // Update endPoint only if not already adjusted
+              if (section.endPoint && !endpointAlreadyAdjusted) {
                 section.endPoint.y -= offsetY;
               }
+              // Update bendPoints - for adjusted endpoint edges, skip the last one
               if (section.bendPoints) {
-                for (const bp of section.bendPoints) {
-                  bp.y -= offsetY;
+                const bendCount = section.bendPoints.length;
+                for (let i = 0; i < bendCount; i++) {
+                  // Skip last bendPoint if endpoint was already adjusted
+                  if (endpointAlreadyAdjusted && i === bendCount - 1) continue;
+                  section.bendPoints[i].y -= offsetY;
                 }
               }
             }
@@ -464,8 +586,8 @@ export class MainFlowNormalizer {
               }
             }
           }
-          // If only target moved, adjust end point
-          else if (!sourceMoved && targetMoved && edge.sections) {
+          // If only target moved, adjust end point (but not if already adjusted)
+          else if (!sourceMoved && targetMoved && edge.sections && !endpointAlreadyAdjusted) {
             for (const section of edge.sections) {
               if (section.endPoint) {
                 section.endPoint.y -= offsetY;

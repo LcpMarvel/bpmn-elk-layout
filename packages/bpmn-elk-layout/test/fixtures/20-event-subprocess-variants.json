@@ -33,38 +33,6 @@
       },
       "children": [
         {
-          "id": "start_main",
-          "width": 36, "height": 36,
-          "bpmn": {
-            "type": "startEvent",
-            "eventDefinitionType": "none",
-            "name": "开始"
-          },
-          "labels": [{ "text": "开始" }]
-        },
-        {
-          "id": "task_main_1",
-          "width": 100, "height": 80,
-          "bpmn": { "type": "userTask", "name": "主要任务1" },
-          "labels": [{ "text": "主要任务1" }]
-        },
-        {
-          "id": "task_main_2",
-          "width": 100, "height": 80,
-          "bpmn": { "type": "serviceTask", "name": "主要任务2" },
-          "labels": [{ "text": "主要任务2" }]
-        },
-        {
-          "id": "end_main",
-          "width": 36, "height": 36,
-          "bpmn": {
-            "type": "endEvent",
-            "eventDefinitionType": "none",
-            "name": "正常结束"
-          },
-          "labels": [{ "text": "正常结束" }]
-        },
-        {
           "id": "event_subprocess_message",
           "width": 300, "height": 120,
           "bpmn": {
@@ -371,11 +339,6 @@
             { "id": "evtsub_error_flow_2", "sources": ["evtsub_error_task"], "targets": ["evtsub_error_end"], "bpmn": { "type": "sequenceFlow" } }
           ]
         }
-      ],
-      "edges": [
-        { "id": "main_flow_1", "sources": ["start_main"], "targets": ["task_main_1"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "main_flow_2", "sources": ["task_main_1"], "targets": ["task_main_2"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "main_flow_3", "sources": ["task_main_2"], "targets": ["end_main"], "bpmn": { "type": "sequenceFlow" } }
       ]
     }
   ]
