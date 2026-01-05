@@ -348,7 +348,7 @@ type 可选值：`subProcess`, `transaction`, `adHocSubProcess`
 注意：
 - `elk.partitioning.partition` 值决定泳道顺序（0, 1, 2...）
 - 顺序流（sequenceFlow）可以跨泳道连接
-- 每个泳道可以为空（没有 children），但通常应包含至少一个节点
+- 🚨 **使用 lane 时，所有节点必须在 lane 内**：当 participant 包含 lane 时，所有流程节点（事件、任务、网关）都必须放在某个 lane.children 中，不能直接放在 participant.children 中与 lane 同级
 
 ---
 
@@ -899,6 +899,65 @@ edges: [
 }
 ```
 
+### ❌ 错误4：使用 lane 时节点与 lane 同级（最常见！）
+
+当使用泳道结构时，**所有节点都必须放在某个 lane 的 children 中**，不能把节点直接放在 participant.children 中与 lane 同级。
+
+```json
+// ❌ 错误！start_1 和 gateway_1 不应该与 lane 同级
+{
+  "id": "pool_1",
+  "bpmn": { "type": "participant", "processRef": "process_1" },
+  "children": [
+    { "id": "lane_sales", "bpmn": { "type": "lane" }, "children": [
+      { "id": "task_1", "width": 100, "height": 80, "bpmn": { "type": "userTask", "name": "任务1" } }
+    ]},
+    { "id": "lane_finance", "bpmn": { "type": "lane" }, "children": [
+      { "id": "task_2", "width": 100, "height": 80, "bpmn": { "type": "userTask", "name": "任务2" } }
+    ]},
+    // ❌ 错误：这些节点与 lane 同级，会导致布局问题
+    { "id": "start_1", "width": 36, "height": 36, "bpmn": { "type": "startEvent", "eventDefinitionType": "none" } },
+    { "id": "gateway_1", "width": 50, "height": 50, "bpmn": { "type": "exclusiveGateway" } },
+    { "id": "end_1", "width": 36, "height": 36, "bpmn": { "type": "endEvent", "eventDefinitionType": "none" } }
+  ]
+}
+```
+
+### ✅ 正确做法：所有节点都在 lane 内
+
+```json
+{
+  "id": "pool_1",
+  "bpmn": { "type": "participant", "processRef": "process_1" },
+  "layoutOptions": { "elk.partitioning.activate": true },
+  "children": [
+    { "id": "lane_sales", "bpmn": { "type": "lane", "name": "销售部" }, 
+      "layoutOptions": { "elk.partitioning.partition": 0 },
+      "children": [
+        { "id": "start_1", "width": 36, "height": 36, "bpmn": { "type": "startEvent", "eventDefinitionType": "none" } },
+        { "id": "task_1", "width": 100, "height": 80, "bpmn": { "type": "userTask", "name": "任务1" } },
+        { "id": "gateway_1", "width": 50, "height": 50, "bpmn": { "type": "exclusiveGateway" } }
+      ]
+    },
+    { "id": "lane_finance", "bpmn": { "type": "lane", "name": "财务部" },
+      "layoutOptions": { "elk.partitioning.partition": 1 },
+      "children": [
+        { "id": "task_2", "width": 100, "height": 80, "bpmn": { "type": "userTask", "name": "任务2" } },
+        { "id": "end_1", "width": 36, "height": 36, "bpmn": { "type": "endEvent", "eventDefinitionType": "none" } }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "flow_1", "sources": ["start_1"], "targets": ["task_1"], "bpmn": { "type": "sequenceFlow" } },
+    { "id": "flow_2", "sources": ["task_1"], "targets": ["gateway_1"], "bpmn": { "type": "sequenceFlow" } },
+    { "id": "flow_3", "sources": ["gateway_1"], "targets": ["task_2"], "bpmn": { "type": "sequenceFlow" } },
+    { "id": "flow_4", "sources": ["task_2"], "targets": ["end_1"], "bpmn": { "type": "sequenceFlow" } }
+  ]
+}
+```
+
+**决策原则**：每个节点应该放在其"负责执行"的部门/角色对应的 lane 中。开始事件通常放在流程发起部门，结束事件放在流程终结部门，网关放在做决策的部门。
+
 ---
 
 ## 结构选择指南
@@ -944,6 +1003,7 @@ edges: [
 - [ ] 没有"空 lane + 引用不存在节点"的错误模式
 - [ ] 所有 lane 都有正确的 elk.partitioning.partition 配置
 - [ ] participant 有 elk.partitioning.activate: true 配置
+- [ ] **所有节点都在 lane 内**：没有节点直接放在 participant.children 中与 lane 同级
 
 ### 4. 格式检查
 

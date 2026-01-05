@@ -111,7 +111,7 @@ export class PoolArranger {
 
       if (isBlackBox) {
         pool.width = maxPoolWidth;
-        pool.height = pool.height ?? 60;
+        pool.height = 60;  // Force 60px for black-box pools (ignore any preset value)
       } else if (hasLanes) {
         pool.width = maxPoolWidth;
       } else {

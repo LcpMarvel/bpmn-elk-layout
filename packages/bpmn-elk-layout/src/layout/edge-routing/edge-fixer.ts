@@ -112,6 +112,12 @@ export class EdgeFixer {
 
         for (const edge of node.edges) {
           if (edge.sections && edge.sections.length > 0) {
+            // Skip edges with pool-relative coordinates - they're already processed by lane-arranger
+            // with correct waypoints. EdgeFixer would use incorrect coordinate system for these.
+            const hasPoolRelativeCoords = (edge as ElkExtendedEdge & { _poolRelativeCoords?: boolean })._poolRelativeCoords === true;
+            if (hasPoolRelativeCoords) {
+              continue;
+            }
             this.fixEdgeIfCrossing(edge, containerNodes, containerOffsetX, containerOffsetY);
           }
         }

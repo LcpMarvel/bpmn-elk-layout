@@ -489,6 +489,10 @@ export class DiagramBuilder {
       }
     }
 
+    // Ensure all waypoint segments are orthogonal (no diagonal lines)
+    // Insert bend points where needed to convert diagonals to L-shaped routes
+    this.ensureOrthogonalWaypoints(waypoints);
+
     const edgeModel: EdgeModel = {
       id: `${edge.id}_di`,
       bpmnElement: edge.id,
@@ -576,5 +580,46 @@ export class DiagramBuilder {
       x: (lastPoint?.x ?? 0) - labelWidth / 2,
       y: (lastPoint?.y ?? 0) - labelHeight - 4,
     };
+  }
+
+  /**
+   * Ensure all waypoint segments are orthogonal (horizontal or vertical)
+   * If a diagonal segment is found, insert intermediate bend points to create
+   * an L-shaped orthogonal path.
+   *
+   * Strategy: For diagonal segments, we use "horizontal first" - go horizontally
+   * to the target X, then vertically to the target Y.
+   */
+  private ensureOrthogonalWaypoints(waypoints: PointModel[]): void {
+    if (waypoints.length < 2) return;
+
+    const tolerance = 1; // Allow 1px tolerance for floating point errors
+    let i = 0;
+
+    while (i < waypoints.length - 1) {
+      const current = waypoints[i];
+      const next = waypoints[i + 1];
+      if (!current || !next) {
+        i++;
+        continue;
+      }
+
+      const dx = Math.abs(next.x - current.x);
+      const dy = Math.abs(next.y - current.y);
+
+      // Check if this segment is diagonal (both dx and dy are significant)
+      if (dx > tolerance && dy > tolerance) {
+        // Insert a bend point to make it orthogonal
+        // Use "horizontal first" strategy: go to next.x first, then to next.y
+        const bendPoint: PointModel = { x: next.x, y: current.y };
+        waypoints.splice(i + 1, 0, bendPoint);
+        // Don't increment i - we need to check the newly created segment
+        // But the next iteration will check (current -> bendPoint) which is horizontal
+        // So we can safely increment to check the next pair
+        i++;
+      } else {
+        i++;
+      }
+    }
   }
 }

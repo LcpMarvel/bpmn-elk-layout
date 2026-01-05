@@ -360,7 +360,16 @@ export class LaneArranger {
 
         // Add bend points for orthogonal routing if source and target are in different lanes
         if (Math.abs(startY - endY) > 10) {
-          const midX = (startX + endX) / 2;
+          // Find a clear X position for the vertical segment that avoids obstacles
+          const midX = this.findClearMidX(
+            startX,
+            endX,
+            startY,
+            endY,
+            sourceId,
+            targetId,
+            nodePositions
+          );
           waypoints.push({ x: midX, y: startY });
           waypoints.push({ x: midX, y: endY });
         }
@@ -382,5 +391,158 @@ export class LaneArranger {
         }];
       }
     }
+  }
+
+  /**
+   * Find a clear X position for vertical edge segment that avoids obstacles.
+   * Checks all three segments of the L-shaped path:
+   * 1. Horizontal from (startX, startY) to (midX, startY)
+   * 2. Vertical from (midX, startY) to (midX, endY)
+   * 3. Horizontal from (midX, endY) to (endX, endY)
+   */
+  private findClearMidX(
+    startX: number,
+    endX: number,
+    startY: number,
+    endY: number,
+    sourceId: string | undefined,
+    targetId: string | undefined,
+    nodePositions: Map<string, { x: number; y: number; width: number; height: number }>
+  ): number {
+    const margin = 15; // Margin to keep from node edges
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+    const rangeMinX = Math.min(startX, endX);
+    const rangeMaxX = Math.max(startX, endX);
+
+    if (isDebugEnabled()) {
+      console.log(`[BPMN]   findClearMidX: startX=${startX}, endX=${endX}, startY=${startY}, endY=${endY}`);
+    }
+
+    // Collect all obstacles that could affect any segment of the path
+    const allObstacles: { x: number; y: number; width: number; height: number; right: number; bottom: number; id: string }[] = [];
+    for (const [nodeId, pos] of nodePositions) {
+      if (nodeId === sourceId || nodeId === targetId) continue;
+
+      const nodeLeft = pos.x;
+      const nodeRight = pos.x + pos.width;
+      const nodeTop = pos.y;
+      const nodeBottom = pos.y + pos.height;
+
+      // Check if this node could affect any part of the path
+      // It affects the path if:
+      // - Its X range overlaps with [rangeMinX, rangeMaxX] AND
+      // - Its Y range overlaps with [minY, maxY] OR contains startY OR contains endY
+      const xOverlap = nodeRight > rangeMinX && nodeLeft < rangeMaxX;
+      const yOverlapVertical = nodeBottom > minY && nodeTop < maxY;
+      const yContainsStartY = nodeTop <= startY && nodeBottom >= startY;
+      const yContainsEndY = nodeTop <= endY && nodeBottom >= endY;
+
+      if (xOverlap && (yOverlapVertical || yContainsStartY || yContainsEndY)) {
+        allObstacles.push({
+          x: nodeLeft,
+          y: nodeTop,
+          width: pos.width,
+          height: pos.height,
+          right: nodeRight,
+          bottom: nodeBottom,
+          id: nodeId,
+        });
+        if (isDebugEnabled()) {
+          console.log(`[BPMN]   findClearMidX: obstacle ${nodeId}: x=[${nodeLeft}, ${nodeRight}], y=[${nodeTop}, ${nodeBottom}]`);
+        }
+      }
+    }
+
+    // If no obstacles, use simple midpoint
+    if (allObstacles.length === 0) {
+      return (startX + endX) / 2;
+    }
+
+    // Check if a candidate midX creates a valid path that doesn't cross any obstacle
+    const isValidMidX = (midX: number): boolean => {
+      for (const obs of allObstacles) {
+        // Check horizontal segment 1: y=startY, x from startX to midX
+        const seg1MinX = Math.min(startX, midX);
+        const seg1MaxX = Math.max(startX, midX);
+        if (obs.y <= startY && obs.bottom >= startY && // Y range contains startY
+            obs.right > seg1MinX && obs.x < seg1MaxX) { // X ranges overlap
+          return false;
+        }
+
+        // Check vertical segment: x=midX, y from minY to maxY
+        if (obs.x <= midX && obs.right >= midX && // X range contains midX
+            obs.bottom > minY && obs.y < maxY) { // Y ranges overlap
+          return false;
+        }
+
+        // Check horizontal segment 2: y=endY, x from midX to endX
+        const seg2MinX = Math.min(midX, endX);
+        const seg2MaxX = Math.max(midX, endX);
+        if (obs.y <= endY && obs.bottom >= endY && // Y range contains endY
+            obs.right > seg2MinX && obs.x < seg2MaxX) { // X ranges overlap
+          return false;
+        }
+      }
+      return true;
+    };
+
+    // Generate candidate midX positions to try
+    const candidates: number[] = [];
+
+    // Simple midpoint
+    candidates.push((startX + endX) / 2);
+
+    // Just after startX
+    candidates.push(startX + margin);
+
+    // Just before endX
+    candidates.push(endX - margin);
+
+    // Positions around each obstacle (left and right edges)
+    for (const obs of allObstacles) {
+      candidates.push(obs.x - margin);
+      candidates.push(obs.right + margin);
+    }
+
+    // Filter candidates to valid range and sort by distance from midpoint
+    const simpleMidX = (startX + endX) / 2;
+    const validCandidates = candidates
+      .filter(x => x >= rangeMinX && x <= rangeMaxX)
+      .sort((a, b) => Math.abs(a - simpleMidX) - Math.abs(b - simpleMidX));
+
+    // Find first valid candidate
+    for (const candidate of validCandidates) {
+      if (isValidMidX(candidate)) {
+        if (isDebugEnabled()) {
+          console.log(`[BPMN]   findClearMidX: found valid position ${candidate}`);
+        }
+        return candidate;
+      }
+    }
+
+    // No valid position found - try routing completely outside all obstacles
+    const leftMost = Math.min(...allObstacles.map(o => o.x)) - margin;
+    const rightMost = Math.max(...allObstacles.map(o => o.right)) + margin;
+
+    if (leftMost >= rangeMinX && isValidMidX(leftMost)) {
+      if (isDebugEnabled()) {
+        console.log(`[BPMN]   findClearMidX: routing left of all obstacles at ${leftMost}`);
+      }
+      return leftMost;
+    }
+
+    if (rightMost <= rangeMaxX && isValidMidX(rightMost)) {
+      if (isDebugEnabled()) {
+        console.log(`[BPMN]   findClearMidX: routing right of all obstacles at ${rightMost}`);
+      }
+      return rightMost;
+    }
+
+    // Fallback: use simple midpoint (edge may cross, but we tried our best)
+    if (isDebugEnabled()) {
+      console.log(`[BPMN]   findClearMidX: no valid route found, using midpoint ${simpleMidX}`);
+    }
+    return simpleMidX;
   }
 }

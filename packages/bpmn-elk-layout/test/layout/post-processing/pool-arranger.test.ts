@@ -855,8 +855,8 @@ describe('PoolArranger', () => {
       arranger.rearrange(layouted, original);
 
       const collab = layouted.children?.[0];
-      // Collaboration height should be sum of pool heights (black boxes keep their height)
-      expect(collab?.height).toBe(150 + 200); // Black box pools keep original height
+      // Collaboration height should be sum of pool heights (black boxes are forced to 60px)
+      expect(collab?.height).toBe(60 + 60); // Black box pools are forced to 60px height
       // Collaboration width should match pool widths
       expect(collab?.width).toBeDefined();
       expect(collab?.width).toBeGreaterThan(0);

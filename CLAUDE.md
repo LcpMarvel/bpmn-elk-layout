@@ -155,6 +155,9 @@ cd packages/bpmn-elk-layout && bun run test
 ```
 This ensures changes don't break existing functionality. If snapshots fail unexpectedly, investigate before updating them.
 
+**When adding a new test fixture, update the fixtures README:**
+After adding a new JSON file to `packages/bpmn-elk-layout/test/fixtures/`, update `test/fixtures/README.md` to include the new test case in the appropriate category table. Keep the numbering sequential and descriptions concise.
+
 **Do NOT use browser automation tools to preview diagrams.** The user will manually preview in the browser. Just make the code changes, run tests, and build.
 
 ## Debugging
