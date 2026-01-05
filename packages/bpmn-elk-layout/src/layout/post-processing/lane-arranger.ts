@@ -9,6 +9,9 @@ import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, Point } from '../../types/internal';
 
+type ElkNodeWithBpmn = ElkNode & { bpmn?: NodeWithBpmn['bpmn'] };
+import { DEBUG } from '../../utils/debug';
+
 /**
  * Handler for lane rearrangement
  */
@@ -157,13 +160,14 @@ export class LaneArranger {
           nestedLane.width = nestedWidth;
         }
 
-        const laneNode: ElkNode = {
+        const laneNode: ElkNodeWithBpmn = {
           id: origLane.id,
           x: this.laneHeaderWidth,
           y: currentY,
           width: maxRight, // Fill full width
           height: nested.totalHeight, // Tight fit
           children: nested.lanes,
+          bpmn: origLane.bpmn,
         };
         lanes.push(laneNode);
         currentY += laneNode.height!;
@@ -193,13 +197,14 @@ export class LaneArranger {
           node.y = (node.y ?? 0) + yOffset;
         }
 
-        const laneNode: ElkNode = {
+        const laneNode: ElkNodeWithBpmn = {
           id: origLane.id,
           x: this.laneHeaderWidth,
           y: currentY,
           width: maxRight,
           height: laneHeight,
           children: nodesInLane,
+          bpmn: origLane.bpmn,
         };
         lanes.push(laneNode);
         currentY += laneHeight;
@@ -332,12 +337,22 @@ export class LaneArranger {
       const sourcePos = sourceId ? nodePositions.get(sourceId) : undefined;
       const targetPos = targetId ? nodePositions.get(targetId) : undefined;
 
+      if (DEBUG) {
+        console.log(`[BPMN] recalculatePoolEdges ${edge.id}: source=${sourceId}, target=${targetId}`);
+        console.log(`[BPMN]   sourcePos=${JSON.stringify(sourcePos)}`);
+        console.log(`[BPMN]   targetPos=${JSON.stringify(targetPos)}`);
+      }
+
       if (sourcePos && targetPos) {
         // Calculate connection points
         const startX = sourcePos.x + sourcePos.width;
         const startY = sourcePos.y + sourcePos.height / 2;
         const endX = targetPos.x;
         const endY = targetPos.y + targetPos.height / 2;
+
+        if (DEBUG) {
+          console.log(`[BPMN]   startX=${startX}, startY=${startY}, endX=${endX}, endY=${endY}`);
+        }
 
         // Create new waypoints
         const waypoints: Point[] = [];
@@ -351,6 +366,10 @@ export class LaneArranger {
         }
 
         waypoints.push({ x: endX, y: endY });
+
+        if (DEBUG) {
+          console.log(`[BPMN]   waypoints=${JSON.stringify(waypoints)}`);
+        }
 
         // Update edge sections
         // Mark as pool-relative coords (model-builder should use pool offset, not source node offset)

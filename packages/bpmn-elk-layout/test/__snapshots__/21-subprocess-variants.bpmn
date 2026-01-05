@@ -369,14 +369,10 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="main_flow_2_di" bpmnElement="main_flow_2">
         <di:waypoint x="304" y="142" />
-        <di:waypoint x="309" y="142" />
-        <di:waypoint x="309" y="142" />
         <di:waypoint x="324" y="142" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="main_flow_3_di" bpmnElement="main_flow_3">
         <di:waypoint x="696" y="142" />
-        <di:waypoint x="701" y="142" />
-        <di:waypoint x="701" y="142" />
         <di:waypoint x="716" y="142" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="main_flow_4_di" bpmnElement="main_flow_4">

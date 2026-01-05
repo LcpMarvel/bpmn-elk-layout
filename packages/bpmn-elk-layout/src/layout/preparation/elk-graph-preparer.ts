@@ -344,11 +344,12 @@ export class ElkGraphPreparer {
         'elk.padding': '[top=12,left=12,bottom=12,right=12]',
       } as LayoutOptions;
 
-      const elkNode: ElkNode = {
+      const elkNode: ElkNode & { bpmn?: NodeWithBpmn['bpmn'] } = {
         id: node.id,
         width: node.width,
         height: node.height,
         layoutOptions,
+        bpmn: node.bpmn,
       };
 
       // Flatten all pool contents to collaboration level
@@ -405,11 +406,12 @@ export class ElkGraphPreparer {
       } as LayoutOptions;
     }
 
-    const elkNode: ElkNode = {
+    const elkNode: ElkNode & { bpmn?: NodeWithBpmn['bpmn'] } = {
       id: node.id,
       width: node.width,
       height: node.height,
       layoutOptions,
+      bpmn: node.bpmn,
     };
 
     // Process children (including boundary events as siblings)
@@ -434,7 +436,8 @@ export class ElkGraphPreparer {
                 id: be.id,
                 width: be.width ?? 36,
                 height: be.height ?? 36,
-              });
+                bpmn: be.bpmn,
+              } as ElkNode & { bpmn?: NodeWithBpmn['bpmn'] });
             }
           }
         }
@@ -508,7 +511,8 @@ export class ElkGraphPreparer {
             id: child.id,
             width: child.width ?? 680,
             height: child.height ?? 60,
-          });
+            bpmn: child.bpmn,
+          } as ElkNode & { bpmn?: NodeWithBpmn['bpmn'] });
         } else {
           // Extract nodes from this pool
           // Check if pool has lanes
@@ -528,7 +532,8 @@ export class ElkGraphPreparer {
                     id: be.id,
                     width: be.width ?? 36,
                     height: be.height ?? 36,
-                  });
+                    bpmn: be.bpmn,
+                  } as ElkNode & { bpmn?: NodeWithBpmn['bpmn'] });
                 }
               }
             }
@@ -565,7 +570,8 @@ export class ElkGraphPreparer {
               id: be.id,
               width: be.width ?? 36,
               height: be.height ?? 36,
-            });
+              bpmn: be.bpmn,
+            } as ElkNode & { bpmn?: NodeWithBpmn['bpmn'] });
           }
         }
       }

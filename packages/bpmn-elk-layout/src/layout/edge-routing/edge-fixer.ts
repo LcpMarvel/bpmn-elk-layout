@@ -50,6 +50,11 @@ export class EdgeFixer {
       const isPool = poolPatterns.some(pattern => pattern.test(id));
       const bpmn = (node as unknown as NodeWithBpmn).bpmn;
 
+      if (DEBUG && (id.includes('lane') || id.includes('pool') || id.includes('end_fast') || id.includes('gateway_fast'))) {
+        console.log(`[BPMN] EdgeFixer.collectNodePositions: id=${id}, offsetX=${offsetX}, offsetY=${offsetY}, bpmn=${JSON.stringify(bpmn)}`);
+        console.log(`[BPMN]   node.x=${node.x}, node.y=${node.y}, isFlowNode=${isFlowNode}, isPool=${isPool}`);
+      }
+
       // If this is a pool/process container, use it as the new container context
       const currentContainerId = isPool ? id : containerId;
 
