@@ -7,7 +7,7 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { ElkBpmnGraph, LayoutedGraph } from '../../types';
 import type { NodeWithBpmn } from '../../types/internal';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for merging layout results with original BPMN data
@@ -114,7 +114,7 @@ export class ResultMerger {
     return originalEdges.map((origEdge) => {
       const layoutedEdge = layoutedEdgeMap.get(origEdge.id);
       if (layoutedEdge) {
-        if (DEBUG && layoutedEdge.sections?.[0]?.bendPoints?.length) {
+        if (isDebugEnabled() && layoutedEdge.sections?.[0]?.bendPoints?.length) {
           console.log(`[BPMN] Merge ${origEdge.id}: bendPoints=${JSON.stringify(layoutedEdge.sections[0].bendPoints)}`);
         }
 

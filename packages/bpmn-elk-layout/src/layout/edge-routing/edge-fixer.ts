@@ -7,7 +7,7 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { Point, Bounds, NodeWithBpmn } from '../../types/internal';
 import { segmentCrossesNode } from './geometry-utils';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for edge crossing detection and fixing
@@ -50,7 +50,7 @@ export class EdgeFixer {
       const isPool = poolPatterns.some(pattern => pattern.test(id));
       const bpmn = (node as unknown as NodeWithBpmn).bpmn;
 
-      if (DEBUG && (id.includes('lane') || id.includes('pool') || id.includes('end_fast') || id.includes('gateway_fast'))) {
+      if (isDebugEnabled() && (id.includes('lane') || id.includes('pool') || id.includes('end_fast') || id.includes('gateway_fast'))) {
         console.log(`[BPMN] EdgeFixer.collectNodePositions: id=${id}, offsetX=${offsetX}, offsetY=${offsetY}, bpmn=${JSON.stringify(bpmn)}`);
         console.log(`[BPMN]   node.x=${node.x}, node.y=${node.y}, isFlowNode=${isFlowNode}, isPool=${isPool}`);
       }
@@ -188,7 +188,7 @@ export class EdgeFixer {
     const targetPos = targetId ? nodePositions.get(targetId) : undefined;
     const sourcePos = sourceId ? nodePositions.get(sourceId) : undefined;
 
-    if (DEBUG && edge.id?.includes('back')) {
+    if (isDebugEnabled() && edge.id?.includes('back')) {
       console.log(`[BPMN] Edge ${edge.id}: sourceId=${sourceId}, targetId=${targetId}`);
       console.log(`[BPMN] Edge ${edge.id}: sourcePos=${JSON.stringify(sourcePos)}, targetPos=${JSON.stringify(targetPos)}`);
       console.log(`[BPMN] Edge ${edge.id}: waypoints.length=${waypoints.length}`);
@@ -203,7 +203,7 @@ export class EdgeFixer {
       // going through the target, we need to reroute
       const isReturnEdge = targetPos.y + targetPos.height < sourcePos.y;
 
-      if (DEBUG && edge.id?.includes('back')) {
+      if (isDebugEnabled() && edge.id?.includes('back')) {
         console.log(`[BPMN] Edge ${edge.id}: isReturnEdge=${isReturnEdge}`);
         if (lastWaypoint) {
           console.log(`[BPMN] Edge ${edge.id}: lastWaypoint=(${lastWaypoint.x},${lastWaypoint.y})`);
@@ -230,7 +230,7 @@ export class EdgeFixer {
 
     if (crossedNodes.length === 0) return;
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] Edge ${edge.id} crosses nodes: ${crossedNodes.join(', ')}`);
     }
 
@@ -298,7 +298,7 @@ export class EdgeFixer {
 
     section.bendPoints = relativeBendPoints.length > 0 ? relativeBendPoints : undefined;
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] Fixed edge ${edge.id} with ${relativeBendPoints.length} bend points`);
     }
   }

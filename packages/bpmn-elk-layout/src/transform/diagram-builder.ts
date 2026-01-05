@@ -18,7 +18,7 @@ import type {
   NodeOffset,
   NodeBpmnInfo,
 } from './model-types';
-import { DEBUG } from '../utils/debug';
+import { isDebugEnabled } from '../utils/debug';
 import {
   adjustGatewayEndpoint,
   distance,
@@ -382,7 +382,7 @@ export class DiagramBuilder {
       edge.sections[0]?.bendPoints &&
       edge.sections[0].bendPoints.length > 0;
 
-    if (DEBUG && bePosition) {
+    if (isDebugEnabled() && bePosition) {
       console.log(`[BPMN] buildEdge ${edge.id}: preCalculated=${hasPreCalculatedSections}`);
     }
 

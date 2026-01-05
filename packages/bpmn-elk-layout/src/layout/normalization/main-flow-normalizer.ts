@@ -8,7 +8,7 @@
 import type { ElkNode } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn } from '../../types/internal';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 const TARGET_MAIN_FLOW_Y = 12; // Target Y position for main flow (with padding)
 const GATEWAY_OFFSET_Y = 150; // How far below main flow the converging gateway should be
@@ -152,7 +152,7 @@ export class MainFlowNormalizer {
     // Calculate the offset to shift upstream main flow up
     const offsetY = currentMinY - TARGET_MAIN_FLOW_Y;
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] Normalizing main flow: currentMinY=${currentMinY}, offsetY=${offsetY}`);
       console.log(`[BPMN] Upstream nodes: ${upstreamMainFlow.map(n => n.id).join(', ')}`);
       console.log(`[BPMN] Downstream nodes: ${downstreamMainFlow.map(n => n.id).join(', ')}`);
@@ -162,7 +162,7 @@ export class MainFlowNormalizer {
     for (const node of otherUpstreamNodes) {
       if (node.y !== undefined) {
         node.y -= offsetY;
-        if (DEBUG) {
+        if (isDebugEnabled()) {
           console.log(`[BPMN] Shifted upstream ${node.id} to y=${node.y}`);
         }
       }
@@ -179,7 +179,7 @@ export class MainFlowNormalizer {
           const predecessorCenterY = predecessor.y + (predecessor.height ?? 80) / 2;
           const endNodeCenterY = (endNode.height ?? 36) / 2;
           endNode.y = predecessorCenterY - endNodeCenterY;
-          if (DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[BPMN] Aligned endEvent ${endNode.id} with predecessor ${predecessorId}: y=${endNode.y}`);
           }
         }
@@ -187,7 +187,7 @@ export class MainFlowNormalizer {
         // Fallback: shift like other nodes
         if (endNode.y !== undefined) {
           endNode.y -= offsetY;
-          if (DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[BPMN] Shifted upstream ${endNode.id} to y=${endNode.y} (no predecessor found)`);
           }
         }
@@ -227,7 +227,7 @@ export class MainFlowNormalizer {
           const newY = prevBottom + MIN_SPACING;
           currNode.y = newY;
           adjustedEndEvents.set(currNode.id, newY);
-          if (DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[BPMN] Adjusted overlapping endEvent ${currNode.id} at x=${x}: y=${currNode.y}`);
           }
         }
@@ -262,7 +262,7 @@ export class MainFlowNormalizer {
       for (const node of downstreamMainFlow) {
         if (node.y !== undefined) {
           node.y -= downstreamOffsetY;
-          if (DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[BPMN] Shifted downstream ${node.id} to y=${node.y}`);
           }
         }
@@ -506,14 +506,14 @@ export class MainFlowNormalizer {
                     lastBend.y = newTargetY;
                     section.endPoint.y = newTargetY;
                     edgesWithAdjustedEndpoint.add(edge.id);
-                    if (DEBUG) {
+                    if (isDebugEnabled()) {
                       console.log(`[BPMN] Updated edge ${edge.id} last bendPoint and endpoint to y=${newTargetY}`);
                     }
                   } else {
                     // Last segment is vertical, just update endpoint
                     section.endPoint.y = newTargetY;
                     edgesWithAdjustedEndpoint.add(edge.id);
-                    if (DEBUG) {
+                    if (isDebugEnabled()) {
                       console.log(`[BPMN] Updated edge ${edge.id} endpoint to y=${newTargetY}`);
                     }
                   }
@@ -521,7 +521,7 @@ export class MainFlowNormalizer {
                   // No bendPoints, just update endpoint
                   section.endPoint.y = newTargetY;
                   edgesWithAdjustedEndpoint.add(edge.id);
-                  if (DEBUG) {
+                  if (isDebugEnabled()) {
                     console.log(`[BPMN] Updated edge ${edge.id} endpoint to y=${newTargetY}`);
                   }
                 }

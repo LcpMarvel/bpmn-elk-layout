@@ -7,7 +7,7 @@
 
 import type { ElkNode } from 'elkjs';
 import type { NodeMoveInfo } from '../../types/internal';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for propagating gateway movement to downstream nodes
@@ -74,7 +74,7 @@ export class GatewayPropagator {
             newX: newX,
           });
 
-          if (DEBUG) {
+          if (isDebugEnabled()) {
             console.log(`[BPMN] Propagating gateway movement to ${targetId}: x ${currentX} -> ${newX}`);
           }
 
@@ -118,7 +118,7 @@ export class GatewayPropagator {
           newX: newX,
         });
 
-        if (DEBUG) {
+        if (isDebugEnabled()) {
           console.log(`[BPMN] Propagating X to ${targetId}: x ${currentX} -> ${newX}`);
         }
 

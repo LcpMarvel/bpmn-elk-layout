@@ -20,7 +20,7 @@ import { ElkGraphPreparer } from './preparation/elk-graph-preparer';
 import { ResultMerger } from './preparation/result-merger';
 import { MainFlowNormalizer } from './normalization/main-flow-normalizer';
 import { GatewayPropagator } from './normalization/gateway-propagator';
-import { DEBUG } from '../utils/debug';
+import { isDebugEnabled } from '../utils/debug';
 
 export interface ElkLayouterOptions {
   elkOptions?: ElkLayoutOptions;
@@ -96,7 +96,7 @@ export class ElkLayouter {
 
     // Check if boundary event targets need repositioning
     // Pass sizedGraph to access node type information (bpmn.type) which is not preserved in ELK graph
-    const movedNodes = this.boundaryEventHandler.identifyNodesToMove(layoutedElkGraph, boundaryEventInfo, sizedGraph, DEBUG);
+    const movedNodes = this.boundaryEventHandler.identifyNodesToMove(layoutedElkGraph, boundaryEventInfo, sizedGraph, isDebugEnabled());
 
     if (movedNodes.size > 0) {
       // Move nodes and recalculate affected edges
@@ -104,7 +104,7 @@ export class ElkLayouter {
 
       // Reposition converging gateways based on incoming edge positions
       const gatewayMoves = this.boundaryEventHandler.repositionConvergingGateways(
-        layoutedElkGraph, movedNodes, boundaryEventInfo, DEBUG
+        layoutedElkGraph, movedNodes, boundaryEventInfo, isDebugEnabled()
       );
 
       if (gatewayMoves.size > 0) {
@@ -120,7 +120,7 @@ export class ElkLayouter {
         movedNodes.set(id, move);
       }
 
-      this.boundaryEventHandler.recalculateEdgesForMovedNodes(layoutedElkGraph, movedNodes, boundaryEventInfo, DEBUG);
+      this.boundaryEventHandler.recalculateEdgesForMovedNodes(layoutedElkGraph, movedNodes, boundaryEventInfo);
     }
 
     // Reposition artifacts (data objects, data stores, annotations) to be near their associated tasks

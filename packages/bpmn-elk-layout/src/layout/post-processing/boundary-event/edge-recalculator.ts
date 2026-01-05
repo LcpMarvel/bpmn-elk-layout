@@ -5,6 +5,7 @@
 
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { Point, Bounds, BoundaryEventInfo, NodeMoveInfo } from '../../../types/internal';
+import { isDebugEnabled } from '../../../utils/debug';
 
 /**
  * Recalculate edge waypoints for edges connected to moved nodes
@@ -13,9 +14,9 @@ import type { Point, Bounds, BoundaryEventInfo, NodeMoveInfo } from '../../../ty
 export function recalculateEdgesForMovedNodes(
   graph: ElkNode,
   movedNodes: Map<string, NodeMoveInfo>,
-  boundaryEventInfo: Map<string, BoundaryEventInfo>,
-  debug = false
+  boundaryEventInfo: Map<string, BoundaryEventInfo>
 ): void {
+  const debug = isDebugEnabled();
   // Build node map for position lookups (including boundary events)
   const nodeMap = new Map<string, ElkNode>();
   const buildNodeMap = (node: ElkNode) => {
@@ -123,9 +124,9 @@ export function recalculateEdgeWithObstacleAvoidance(
   source: ElkNode,
   target: ElkNode,
   obstacleIds: Set<string>,
-  nodeMap: Map<string, ElkNode>,
-  debug = false
+  nodeMap: Map<string, ElkNode>
 ): void {
+  const debug = isDebugEnabled();
   const sx = source.x ?? 0;
   const sy = source.y ?? 0;
   const sw = source.width ?? 100;

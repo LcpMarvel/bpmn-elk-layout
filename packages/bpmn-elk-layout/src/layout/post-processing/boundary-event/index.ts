@@ -86,9 +86,8 @@ export class BoundaryEventHandler {
   recalculateEdgesForMovedNodes(
     graph: ElkNode,
     movedNodes: Map<string, NodeMoveInfo>,
-    boundaryEventInfo: Map<string, BoundaryEventInfo>,
-    debug = false
+    boundaryEventInfo: Map<string, BoundaryEventInfo>
   ): void {
-    recalculateEdgesForMovedNodes(graph, movedNodes, boundaryEventInfo, debug);
+    recalculateEdgesForMovedNodes(graph, movedNodes, boundaryEventInfo);
   }
 }

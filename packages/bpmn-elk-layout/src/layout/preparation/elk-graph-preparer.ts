@@ -13,7 +13,7 @@ import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, BoundaryEventInfo } from '../../types/internal';
 import { mergeElkOptions } from '../default-options';
 import { SizeCalculator } from '../size-calculator';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for preparing graphs for ELK layout
@@ -217,7 +217,7 @@ export class ElkGraphPreparer {
       traverseMainFlow(startId);
     }
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] Main flow nodes: ${Array.from(mainFlowNodes).join(', ')}`);
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "bpmn-elk-layout",
-  "version": "1.0.0",
-  "description": "Convert ELK-BPMN JSON to BPMN 2.0 XML with automatic layout",
+  "version": "1.0.2",
+  "description": "Convert ELK-BPMN JSON to BPMN 2.0 XML with automatic layout calculation. Supports all BPMN 2.0 elements including events, tasks, gateways, subprocesses, and swimlanes.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -49,17 +49,29 @@
   },
   "keywords": [
     "bpmn",
+    "bpmn2",
+    "bpmn-io",
     "elk",
+    "elkjs",
     "layout",
+    "auto-layout",
     "converter",
     "workflow",
     "process",
-    "diagram"
+    "diagram",
+    "graph",
+    "flowchart",
+    "camunda",
+    "process-automation"
   ],
-  "author": "",
+  "author": "LcpMarvel",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/LcpMarvel/bpmn-elk-layout.git"
+  },
+  "homepage": "https://github.com/LcpMarvel/bpmn-elk-layout#readme",
+  "bugs": {
+    "url": "https://github.com/LcpMarvel/bpmn-elk-layout/issues"
   }
 }

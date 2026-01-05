@@ -6,7 +6,7 @@
  */
 
 import type { Point, Bounds } from '../../types/internal';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Adjust an edge endpoint to connect to a gateway's diamond shape.
@@ -28,7 +28,7 @@ export function adjustGatewayEndpoint(
   const gatewayCenterY = gatewayBounds.y + gatewayBounds.height / 2;
   const tolerance = 1; // Tolerance for corner detection
 
-  if (DEBUG) {
+  if (isDebugEnabled()) {
     console.log(`[BPMN] adjustGatewayEndpoint: isSource=${isSource}`);
     console.log(`  endpoint: (${endpoint.x}, ${endpoint.y})`);
     console.log(`  gatewayBounds: x=${gatewayBounds.x}, y=${gatewayBounds.y}, w=${gatewayBounds.width}, h=${gatewayBounds.height}`);
@@ -46,29 +46,29 @@ export function adjustGatewayEndpoint(
   // Left corner: x at left edge AND y at center
   if (Math.abs(endpoint.x - gatewayBounds.x) < tolerance &&
       Math.abs(endpoint.y - gatewayCenterY) < tolerance) {
-    if (DEBUG) console.log(`  -> Already at LEFT corner, no adjustment`);
+    if (isDebugEnabled()) console.log(`  -> Already at LEFT corner, no adjustment`);
     return endpoint;
   }
   // Right corner: x at right edge AND y at center
   if (Math.abs(endpoint.x - (gatewayBounds.x + gatewayBounds.width)) < tolerance &&
       Math.abs(endpoint.y - gatewayCenterY) < tolerance) {
-    if (DEBUG) console.log(`  -> Already at RIGHT corner, no adjustment`);
+    if (isDebugEnabled()) console.log(`  -> Already at RIGHT corner, no adjustment`);
     return endpoint;
   }
   // Top corner: y at top edge AND x at center
   if (Math.abs(endpoint.y - gatewayBounds.y) < tolerance &&
       Math.abs(endpoint.x - gatewayCenterX) < tolerance) {
-    if (DEBUG) console.log(`  -> Already at TOP corner, no adjustment`);
+    if (isDebugEnabled()) console.log(`  -> Already at TOP corner, no adjustment`);
     return endpoint;
   }
   // Bottom corner: y at bottom edge AND x at center
   if (Math.abs(endpoint.y - (gatewayBounds.y + gatewayBounds.height)) < tolerance &&
       Math.abs(endpoint.x - gatewayCenterX) < tolerance) {
-    if (DEBUG) console.log(`  -> Already at BOTTOM corner, no adjustment`);
+    if (isDebugEnabled()) console.log(`  -> Already at BOTTOM corner, no adjustment`);
     return endpoint;
   }
 
-  if (DEBUG) {
+  if (isDebugEnabled()) {
     console.log(`  -> NOT at corner, will adjust`);
   }
 
@@ -81,7 +81,7 @@ export function adjustGatewayEndpoint(
     isSource,
     adjacentPoint
   );
-  if (DEBUG) {
+  if (isDebugEnabled()) {
     console.log(`  -> Adjusted to: (${result.x}, ${result.y})`);
   }
   return result;

@@ -10,7 +10,7 @@ import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, Point } from '../../types/internal';
 
 type ElkNodeWithBpmn = ElkNode & { bpmn?: NodeWithBpmn['bpmn'] };
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for lane rearrangement
@@ -337,7 +337,7 @@ export class LaneArranger {
       const sourcePos = sourceId ? nodePositions.get(sourceId) : undefined;
       const targetPos = targetId ? nodePositions.get(targetId) : undefined;
 
-      if (DEBUG) {
+      if (isDebugEnabled()) {
         console.log(`[BPMN] recalculatePoolEdges ${edge.id}: source=${sourceId}, target=${targetId}`);
         console.log(`[BPMN]   sourcePos=${JSON.stringify(sourcePos)}`);
         console.log(`[BPMN]   targetPos=${JSON.stringify(targetPos)}`);
@@ -350,7 +350,7 @@ export class LaneArranger {
         const endX = targetPos.x;
         const endY = targetPos.y + targetPos.height / 2;
 
-        if (DEBUG) {
+        if (isDebugEnabled()) {
           console.log(`[BPMN]   startX=${startX}, startY=${startY}, endX=${endX}, endY=${endY}`);
         }
 
@@ -367,7 +367,7 @@ export class LaneArranger {
 
         waypoints.push({ x: endX, y: endY });
 
-        if (DEBUG) {
+        if (isDebugEnabled()) {
           console.log(`[BPMN]   waypoints=${JSON.stringify(waypoints)}`);
         }
 

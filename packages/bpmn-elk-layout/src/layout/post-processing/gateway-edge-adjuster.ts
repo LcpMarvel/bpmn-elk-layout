@@ -16,7 +16,7 @@
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { Point, Bounds, NodeWithBpmn } from '../../types/internal';
 import type { ElkBpmnGraph } from '../../types';
-import { DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 import { distance, lineIntersection } from '../edge-routing/geometry-utils';
 
 interface GatewayInfo {
@@ -47,7 +47,7 @@ export class GatewayEdgeAdjuster {
 
     if (gateways.size === 0) return;
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] GatewayEdgeAdjuster: Found ${gateways.size} gateways`);
       for (const [id, info] of gateways) {
         console.log(`[BPMN]   - ${id}: bounds=(${info.bounds.x},${info.bounds.y},${info.bounds.width},${info.bounds.height})`);
@@ -171,7 +171,7 @@ export class GatewayEdgeAdjuster {
     const sourceId = edge.sources?.[0];
     const targetId = edge.targets?.[0];
 
-    if (DEBUG) {
+    if (isDebugEnabled()) {
       console.log(`[BPMN] GatewayEdgeAdjuster: Processing edge ${edge.id}, offset=(${offsetX},${offsetY})`);
       console.log(`[BPMN]   sourceId=${sourceId}, targetId=${targetId}`);
       console.log(`[BPMN]   startPoint=(${section.startPoint.x},${section.startPoint.y}), endPoint=(${section.endPoint.x},${section.endPoint.y})`);
@@ -187,7 +187,7 @@ export class GatewayEdgeAdjuster {
     // Check if target is a gateway
     const targetGateway = targetId ? gateways.get(targetId) : undefined;
     if (targetGateway) {
-      if (DEBUG) {
+      if (isDebugEnabled()) {
         console.log(`[BPMN]   target gateway: ${targetId}, bounds=(${targetGateway.bounds.x},${targetGateway.bounds.y})`);
         console.log(`[BPMN]   left corner: (${targetGateway.corners.left.x},${targetGateway.corners.left.y})`);
       }
@@ -305,7 +305,7 @@ export class GatewayEdgeAdjuster {
         }
       }
 
-      if (DEBUG) {
+      if (isDebugEnabled()) {
         console.log(`[BPMN] GatewayEdgeAdjuster: Adjusted edge ${edge.id} endpoint from (${endX},${endY}) to (${targetCorner.x},${targetCorner.y})`);
       }
     } else {
@@ -323,7 +323,7 @@ export class GatewayEdgeAdjuster {
           y: intersectionPoint.y - offsetY,
         };
 
-        if (DEBUG) {
+        if (isDebugEnabled()) {
           console.log(`[BPMN] GatewayEdgeAdjuster: Adjusted edge ${edge.id} endpoint to diamond intersection (${intersectionPoint.x},${intersectionPoint.y})`);
         }
       }
