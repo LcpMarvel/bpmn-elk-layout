@@ -74,6 +74,7 @@
 | 34 | `34-global-task.json` | 全局任务 (GlobalUserTask/ManualTask/ScriptTask/BusinessRuleTask) |
 | 35 | `35-voc-cross-lane.json` | 跨泳道流程 (多泳道、跨泳道连线、空泳道) |
 | 36 | `36-voc-vop-capture-process.json` | VOC/VOP捕获流程 (黑盒池、消息流、多泳道并行分支) |
+| 37 | `37-employee-resignation-flow.json` | 员工离职IT资产与账号处理流程 (6泳道、空泳道、多网关分支、跨泳道连线) |
 
 ---
 

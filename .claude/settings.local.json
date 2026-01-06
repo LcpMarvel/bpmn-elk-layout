@@ -8,7 +8,9 @@
       "Bash(chmod:*)",
       "Bash(.claude/skills/deepseek-bpmn-generator/generate.sh:*)",
       "Bash(DEBUG=true bun run:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(for f in packages/bpmn-elk-layout/test/fixtures/*.json)",
+      "Bash(done)"
     ]
   }
 }

@@ -4,7 +4,18 @@
 
 ## 🚨 最重要的规则（必读）
 
-**Edge 引用的每个节点 ID 必须先在 children 中定义！**
+### 规则1：ID 必须使用 ASCII 字符（中文 ID 会导致渲染失败！）
+
+**所有 `id` 字段只能使用英文字母、数字、下划线和连字符！绝对禁止使用中文！**
+
+- ❌ 错误：`"id": "开始"`, `"id": "提交申请"`, `"id": "审批网关"`
+- ✅ 正确：`"id": "start_1"`, `"id": "task_submit"`, `"id": "gateway_approve"`
+
+中文名称请放在 `name` 字段：`{ "id": "start_1", "bpmn": { "type": "startEvent", "name": "开始" } }`
+
+**违反此规则会导致 bpmn-js 渲染器只显示泳道框架，所有节点完全不显示！**
+
+### 规则2：Edge 引用的每个节点 ID 必须先在 children 中定义！
 
 这是最常见的致命错误。系统会验证所有 edge 的 sources 和 targets 引用的节点是否存在。如果引用了未定义的节点，验证将失败。
 
@@ -406,6 +417,36 @@ type 可选值：`subProcess`, `transaction`, `adHocSubProcess`
 ---
 
 ## ID 命名规范
+
+### 🚨 致命规则：ID 必须使用 ASCII 字符
+
+**所有 `id` 字段必须只使用英文字母、数字、下划线和连字符！**
+
+❌ **绝对禁止使用中文或其他非 ASCII 字符作为 ID**：
+```json
+// ❌ 错误：使用中文作为 ID
+{ "id": "开始", "bpmn": { "type": "startEvent" } }
+{ "id": "提交申请", "bpmn": { "type": "userTask" } }
+{ "id": "审批网关", "bpmn": { "type": "exclusiveGateway" } }
+```
+
+✅ **正确做法：使用英文 ID，中文放在 name 字段**：
+```json
+// ✅ 正确：英文 ID + 中文 name
+{ "id": "start_1", "bpmn": { "type": "startEvent", "name": "开始" } }
+{ "id": "task_submit", "bpmn": { "type": "userTask", "name": "提交申请" } }
+{ "id": "gateway_approve", "bpmn": { "type": "exclusiveGateway", "name": "审批网关" } }
+```
+
+**原因**：BPMN 2.0 XML 规范要求 `id` 属性符合 XML NCName 格式，只允许：
+- 英文字母 (a-z, A-Z)
+- 数字 (0-9)，但不能作为开头
+- 下划线 `_`
+- 连字符 `-`，但不能作为开头
+
+使用中文 ID 会导致 **bpmn-js 渲染器无法正确识别节点**，结果是只显示泳道/池，节点完全不显示！
+
+### ID 命名格式参考
 
 | 元素 | 格式 | 示例 |
 |------|------|------|
@@ -974,6 +1015,14 @@ edges: [
 ## 🚨 最终检查清单（生成 JSON 后必须执行）
 
 在输出 JSON 之前，请逐项确认：
+
+### 0. ID 格式检查（最最重要！违反会导致渲染完全失败）
+
+- [ ] **所有 `id` 字段都只使用英文字母、数字、下划线、连字符**
+- [ ] **没有任何中文 ID**（如 `"id": "开始"` 是错误的）
+- [ ] 中文名称都放在 `name` 字段而不是 `id` 字段
+
+⚠️ 中文 ID 会导致 bpmn-js 只显示泳道框架，所有节点完全不显示！
 
 ### 1. 节点引用完整性检查（最重要！）
 
