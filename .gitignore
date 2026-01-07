@@ -44,3 +44,5 @@ coverage/
 
 output/
 user-prompt.md
+
+.next/

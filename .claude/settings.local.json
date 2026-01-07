@@ -10,7 +10,8 @@
       "Bash(DEBUG=true bun run:*)",
       "Bash(tree:*)",
       "Bash(for f in packages/bpmn-elk-layout/test/fixtures/*.json)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebFetch(domain:api-docs.deepseek.com)"
     ]
   }
 }
