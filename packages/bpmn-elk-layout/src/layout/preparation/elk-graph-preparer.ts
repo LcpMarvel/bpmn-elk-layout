@@ -228,15 +228,15 @@ export class ElkGraphPreparer {
    * Prepare children for ELK layout
    */
   private prepareChildrenForElk(
-    children: ElkBpmnGraph['children'],
+    nodes: ElkBpmnGraph['children'],
     boundaryEventTargetIds: Set<string> = new Set(),
     mainFlowNodes: Set<string> = new Set()
   ): ElkNode[] {
-    if (!children) return [];
+    if (!nodes) return [];
 
     const result: ElkNode[] = [];
 
-    for (const child of children) {
+    for (const child of nodes) {
       const node = child as unknown as NodeWithBpmn;
       result.push(this.prepareNodeForElk(node, boundaryEventTargetIds, mainFlowNodes));
 
@@ -282,23 +282,24 @@ export class ElkGraphPreparer {
       } as LayoutOptions;
     }
 
-    // Give main flow nodes higher priority so ELK keeps them aligned at the top
-    // This ensures the primary flow path is laid out first and stays in optimal position
-    if (mainFlowNodes.has(node.id)) {
+    // Give main flow nodes higher priority so ELK keeps them aligned
+    if (mainFlowNodes.has(node.id) && !boundaryEventTargetIds.has(node.id)) {
       layoutOptions = {
         ...layoutOptions,
         'elk.priority': '10',
       } as LayoutOptions;
     }
 
-    // Give boundary event targets lower priority so ELK prioritizes main flow layout
-    // This helps prevent exception branches from pulling main flow nodes out of alignment
+    // Give boundary event targets lower priority
+    // Actual positioning below main flow is done in post-processing
     if (boundaryEventTargetIds.has(node.id)) {
       layoutOptions = {
         ...layoutOptions,
-        'elk.priority': '0',
+        'elk.priority': '1',
       } as LayoutOptions;
     }
+
+
 
     // For expanded subprocesses, add top padding for the label header
     const isExpandedSubprocess = node.bpmn?.isExpanded === true &&

@@ -1,16 +1,15 @@
 /**
  * Lane Arranger
  * Handles rearranging lanes to stack vertically within pools.
- * ELK's partitioning doesn't correctly handle BPMN lanes, so we need
- * to rearrange them after layout.
+ * Uses simple sequential stacking for lane positioning.
  */
 
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, Point } from '../../types/internal';
+import { isDebugEnabled } from '../../utils/debug';
 
 type ElkNodeWithBpmn = ElkNode & { bpmn?: NodeWithBpmn['bpmn'] };
-import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for lane rearrangement
@@ -18,8 +17,8 @@ import { isDebugEnabled } from '../../utils/debug';
 export class LaneArranger {
   private readonly laneHeaderWidth = 30;
   private readonly lanePadding = 0; // No extra padding - tight fit
-  private readonly laneExtraWidth = 50; // Extra width for each lane
-  private readonly laneExtraHeight = 80; // Extra height for each lane
+  private readonly laneExtraWidth = 130; // Extra width for each lane
+  private readonly laneExtraHeight = 120; // Extra height for each lane
 
   /**
    * Rearrange lanes within pools to stack vertically
@@ -120,6 +119,7 @@ export class LaneArranger {
 
   /**
    * Recursively build lane structure with positioned nodes
+   * Uses ConstraintSolver for vertical stacking
    */
   private buildLaneStructure(
     origChildren: NodeWithBpmn[],
@@ -129,7 +129,6 @@ export class LaneArranger {
     maxRight: number
   ): { lanes: ElkNode[]; totalHeight: number } {
     const lanes: ElkNode[] = [];
-    let currentY = startY;
 
     // Filter to get only lanes and sort by partition
     const origLanes = origChildren.filter(c => c.bpmn?.type === 'lane');
@@ -139,13 +138,18 @@ export class LaneArranger {
       return (partA !== undefined ? Number(partA) : 0) - (partB !== undefined ? Number(partB) : 0);
     });
 
+    if (origLanes.length === 0) {
+      return { lanes: [], totalHeight: 0 };
+    }
+
+    // Calculate heights for each lane
+    const laneHeights = new Map<string, number>();
+    const laneNodes = new Map<string, ElkNode[]>();
+
     for (const origLane of origLanes) {
       const hasNestedLanes = origLane.children?.some((c: unknown) => (c as NodeWithBpmn).bpmn?.type === 'lane');
 
       if (hasNestedLanes) {
-        // Recursively process nested lanes
-        // Nested lanes are offset by laneHeaderWidth inside their parent,
-        // so they need reduced width to avoid overflow
         const nestedWidth = maxRight - this.laneHeaderWidth;
         const nested = this.buildLaneStructure(
           origLane.children as NodeWithBpmn[],
@@ -154,25 +158,9 @@ export class LaneArranger {
           0,
           nestedWidth
         );
-
-        // Ensure nested lanes fill parent lane width (minus header)
-        for (const nestedLane of nested.lanes) {
-          nestedLane.width = nestedWidth;
-        }
-
-        const laneNode: ElkNodeWithBpmn = {
-          id: origLane.id,
-          x: this.laneHeaderWidth,
-          y: currentY,
-          width: maxRight, // Fill full width
-          height: nested.totalHeight, // Tight fit
-          children: nested.lanes,
-          bpmn: origLane.bpmn,
-        };
-        lanes.push(laneNode);
-        currentY += laneNode.height!;
+        laneHeights.set(origLane.id, nested.totalHeight);
+        laneNodes.set(origLane.id, nested.lanes);
       } else {
-        // Leaf lane - collect its nodes
         const nodesInLane: ElkNode[] = [];
         if (origLane.children) {
           for (const child of origLane.children) {
@@ -181,37 +169,56 @@ export class LaneArranger {
           }
         }
 
-        // Calculate lane height based on content + extra height
         let minY = Infinity, maxY = 0;
         for (const node of nodesInLane) {
           minY = Math.min(minY, node.y ?? 0);
           maxY = Math.max(maxY, (node.y ?? 0) + (node.height ?? 80));
         }
-        // Add extra height to each lane
         const contentHeight = nodesInLane.length > 0 ? maxY - minY : 50;
         const laneHeight = contentHeight + this.laneExtraHeight;
 
-        // Center content vertically within the lane
         const yOffset = nodesInLane.length > 0 ? (this.laneExtraHeight / 2) - minY : 0;
+        const xOffset = this.laneExtraWidth / 2; // Center nodes horizontally
         for (const node of nodesInLane) {
+          node.x = (node.x ?? 0) + xOffset;
           node.y = (node.y ?? 0) + yOffset;
         }
 
-        const laneNode: ElkNodeWithBpmn = {
-          id: origLane.id,
-          x: this.laneHeaderWidth,
-          y: currentY,
-          width: maxRight,
-          height: laneHeight,
-          children: nodesInLane,
-          bpmn: origLane.bpmn,
-        };
-        lanes.push(laneNode);
-        currentY += laneHeight;
+        laneHeights.set(origLane.id, laneHeight);
+        laneNodes.set(origLane.id, nodesInLane);
       }
     }
 
-    return { lanes, totalHeight: currentY - startY };
+    // Simple sequential stacking - lanes stack from startY downward
+    let currentY = startY;
+
+    // Build lane nodes with sequential positions
+    for (const origLane of origLanes) {
+      const height = laneHeights.get(origLane.id) ?? 100;
+      const children = laneNodes.get(origLane.id) ?? [];
+      const hasNestedLanes = origLane.children?.some((c: unknown) => (c as NodeWithBpmn).bpmn?.type === 'lane');
+
+      if (hasNestedLanes) {
+        for (const nestedLane of children) {
+          nestedLane.width = maxRight - this.laneHeaderWidth;
+        }
+      }
+
+      const laneNode: ElkNodeWithBpmn = {
+        id: origLane.id,
+        x: this.laneHeaderWidth,
+        y: currentY,
+        width: maxRight,
+        height: height,
+        children: children,
+        bpmn: origLane.bpmn,
+      };
+      lanes.push(laneNode);
+      currentY += height;
+    }
+
+    const totalHeight = currentY - startY;
+    return { lanes, totalHeight };
   }
 
   /**

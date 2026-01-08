@@ -36,14 +36,27 @@ export function recalculateEdgesForMovedNodes(
   };
   buildNodeMap(graph);
 
-  // Get all obstacle IDs: attached nodes + all moved nodes
+  // Get all obstacle IDs: all flow nodes that could block edge paths
   const obstacleIds = new Set<string>();
+
+  // Add attached nodes
   for (const [, info] of boundaryEventInfo) {
     obstacleIds.add(info.attachedToRef);
   }
   // Add all moved nodes as obstacles (they may block edge paths)
   for (const [nodeId] of movedNodes) {
     obstacleIds.add(nodeId);
+  }
+
+  // Add all flow nodes as potential obstacles (tasks, gateways, events, etc.)
+  const flowNodePatterns = [
+    /^task_/, /^gateway_/, /^start_/, /^end_/,
+    /^subprocess_/, /^call_/, /^intermediate_/, /^event_/, /^catch_/,
+  ];
+  for (const [nodeId] of nodeMap) {
+    if (flowNodePatterns.some(pattern => pattern.test(nodeId))) {
+      obstacleIds.add(nodeId);
+    }
   }
 
   // Calculate correct boundary event positions (they are attached to the bottom of their parent)
@@ -97,8 +110,7 @@ export function recalculateEdgesForMovedNodes(
               sourceNode,
               targetNode,
               obstacleIds,
-              nodeMap,
-              debug
+              nodeMap
             );
           }
         }
@@ -242,6 +254,7 @@ export function recalculateEdgeWithObstacleAvoidance(
 
     waypoints.push({ x: startX, y: startY });
 
+    // Find clearX that avoids all obstacles in the vertical path
     let clearX = Math.max(sx + sw, tx + tw) + 30;
     for (const obs of obstacles) {
       if (obs.y < sy && obs.y + obs.height > ty) {
@@ -249,9 +262,41 @@ export function recalculateEdgeWithObstacleAvoidance(
       }
     }
 
-    waypoints.push({ x: clearX, y: startY });
-    waypoints.push({ x: clearX, y: endY });
-    waypoints.push({ x: endX, y: endY });
+    // Check if the horizontal segment at endY would cross any obstacles
+    // The horizontal segment goes from (clearX, endY) to (endX, endY)
+    let horizontalClearY = endY;
+    const horizSegMinX = Math.min(clearX, endX);
+    const horizSegMaxX = Math.max(clearX, endX);
+    const margin = 20; // Minimum distance from obstacles
+
+    for (const obs of obstacles) {
+      // Check if obstacle overlaps with the horizontal segment
+      const obsRight = obs.x + obs.width;
+      const obsBottom = obs.y + obs.height;
+
+      // If obstacle is in the horizontal path (x-range overlaps)
+      if (obs.x < horizSegMaxX && obsRight > horizSegMinX) {
+        // And the horizontal segment is too close to the obstacle
+        if (horizontalClearY >= obs.y - margin && horizontalClearY <= obsBottom + margin) {
+          // Move the horizontal segment below this obstacle
+          horizontalClearY = Math.max(horizontalClearY, obsBottom + margin);
+        }
+      }
+    }
+
+    // Route: right -> down to clearY -> left to endX -> up to target
+    if (horizontalClearY > endY) {
+      // Need to go around obstacles below them
+      waypoints.push({ x: clearX, y: startY });
+      waypoints.push({ x: clearX, y: horizontalClearY });
+      waypoints.push({ x: endX, y: horizontalClearY });
+      waypoints.push({ x: endX, y: endY });
+    } else {
+      // Original simple routing
+      waypoints.push({ x: clearX, y: startY });
+      waypoints.push({ x: clearX, y: endY });
+      waypoints.push({ x: endX, y: endY });
+    }
   } else if (!isPrimarilyVertical && dx > 0) {
     // Primary direction is RIGHT - exit from right, enter from left
     const startX = sx + sw;

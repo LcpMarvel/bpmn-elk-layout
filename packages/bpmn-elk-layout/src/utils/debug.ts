@@ -39,3 +39,10 @@ export function isDebugEnabled(): boolean {
   if (cliMode) return false;
   return typeof process !== 'undefined' && process.env?.['DEBUG'] === 'true';
 }
+
+/**
+ * DEBUG constant for use in conditional statements.
+ * This is evaluated at module load time, so it won't respect CLI mode changes.
+ * Prefer isDebugEnabled() when CLI mode support is needed.
+ */
+export const DEBUG = typeof process !== 'undefined' && process.env?.['DEBUG'] === 'true';

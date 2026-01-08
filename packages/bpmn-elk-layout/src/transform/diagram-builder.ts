@@ -38,11 +38,15 @@ export class DiagramBuilder {
   private nodeOffsets: Map<string, NodeOffset> = new Map();
   // Map to track node BPMN metadata for gateway detection
   private nodeBpmn: Map<string, NodeBpmnInfo> = new Map();
+  // List of already placed edge labels for collision detection
+  private placedEdgeLabels: Array<{ x: number; y: number; width: number; height: number }> = [];
 
   /**
    * Build the diagram model from a layouted graph
    */
   build(graph: LayoutedGraph, definitions: DefinitionsModel): DiagramModel {
+    // Reset placed edge labels for each build
+    this.placedEdgeLabels = [];
     // Reset all maps
     this.boundaryEventPositions.clear();
     this.nodePositions.clear();
@@ -102,11 +106,20 @@ export class DiagramBuilder {
       const nodeHeight = node.height ?? 80;
 
       // Store node position for edge routing
+      // For events, include the label area below the node in the bounds
+      // to help edge labels avoid overlapping with node labels
+      let effectiveHeight = nodeHeight;
+      if (this.isEventType(node.bpmn?.type) && node.labels && node.labels.length > 0) {
+        // Events have labels below them - extend the effective height
+        const labelHeight = node.labels[0]?.height ?? 14;
+        effectiveHeight = nodeHeight + 4 + labelHeight; // 4px gap + label height
+      }
+
       this.nodePositions.set(node.id, {
         x: absoluteX,
         y: absoluteY,
         width: nodeWidth,
-        height: nodeHeight,
+        height: effectiveHeight,
       });
 
       // Store node BPMN metadata for gateway detection
@@ -493,20 +506,44 @@ export class DiagramBuilder {
     // Insert bend points where needed to convert diagonals to L-shaped routes
     this.ensureOrthogonalWaypoints(waypoints);
 
+    // Ensure endpoints connect perpendicular to node borders
+    // This adds bend points if the last/first segment isn't perpendicular
+    this.ensurePerpendicularEndpoints(
+      waypoints,
+      sourceId,
+      targetId,
+      sourceIsGateway,
+      targetIsGateway
+    );
+
     const edgeModel: EdgeModel = {
       id: `${edge.id}_di`,
       bpmnElement: edge.id,
       waypoints,
     };
 
-    // Add label if present - center it on the edge
+    // Add label if present - use smart positioning on longest segment
     if (edge.labels && edge.labels.length > 0) {
       const label = edge.labels[0];
       const labelWidth = label?.width ?? 50;
       const labelHeight = label?.height ?? 14;
 
-      // Calculate edge midpoint for label placement
-      const labelPos = this.calculateEdgeLabelPosition(waypoints, labelWidth, labelHeight);
+      // Always use our smart label positioning (ELK's positions are often poor)
+      const labelPos = this.calculateSmartLabelPosition(
+        waypoints,
+        labelWidth,
+        labelHeight,
+        sourceId,
+        targetId
+      );
+
+      // Register this label position for collision detection with other edge labels
+      this.placedEdgeLabels.push({
+        x: labelPos.x,
+        y: labelPos.y,
+        width: labelWidth,
+        height: labelHeight,
+      });
 
       edgeModel.label = {
         bounds: {
@@ -522,64 +559,217 @@ export class DiagramBuilder {
   }
 
   /**
-   * Calculate label position centered on the edge
-   * Places label at the midpoint of the edge, offset above the line
+   * Calculate smart label position on the edge
+   * Strategy:
+   * 1. Find the longest segment of the edge (best visibility)
+   * 2. Place label at the midpoint of that segment
+   * 3. Offset based on segment direction, avoiding overlap with source/target nodes
    */
-  private calculateEdgeLabelPosition(
+  private calculateSmartLabelPosition(
     waypoints: PointModel[],
     labelWidth: number,
-    labelHeight: number
+    labelHeight: number,
+    sourceId?: string,
+    targetId?: string
   ): { x: number; y: number } {
     if (waypoints.length < 2) {
       return { x: 0, y: 0 };
     }
 
-    // Find the midpoint segment of the edge
-    const totalLength = calculatePathLength(waypoints);
-    const halfLength = totalLength / 2;
+    // Get source and target node positions for collision avoidance
+    const sourcePos = sourceId ? this.nodePositions.get(sourceId) : undefined;
+    const targetPos = targetId ? this.nodePositions.get(targetId) : undefined;
 
-    // Walk along the path to find the midpoint
-    let accumulatedLength = 0;
+    // Find the longest segment that is not too close to source/target
+    let bestSegmentIndex = -1;
+    let bestSegmentLength = 0;
+
     for (let i = 0; i < waypoints.length - 1; i++) {
       const wpCurrent = waypoints[i];
       const wpNext = waypoints[i + 1];
       if (!wpCurrent || !wpNext) continue;
+
       const segmentLength = distance(wpCurrent, wpNext);
-      const nextAccumulated = accumulatedLength + segmentLength;
 
-      if (nextAccumulated >= halfLength) {
-        // Midpoint is in this segment
-        const ratio = (halfLength - accumulatedLength) / segmentLength;
-        const midX = wpCurrent.x + (wpNext.x - wpCurrent.x) * ratio;
-        const midY = wpCurrent.y + (wpNext.y - wpCurrent.y) * ratio;
+      // Skip very short segments
+      if (segmentLength < 30) continue;
 
-        // Determine if segment is horizontal or vertical
-        const dx = wpNext.x - wpCurrent.x;
-        const dy = wpNext.y - wpCurrent.y;
+      // Calculate segment midpoint
+      const midX = (wpCurrent.x + wpNext.x) / 2;
+      const midY = (wpCurrent.y + wpNext.y) / 2;
 
-        if (Math.abs(dy) < Math.abs(dx)) {
-          // Horizontal segment - place label above the line
-          return {
-            x: midX - labelWidth / 2,
-            y: midY - labelHeight - 4, // 4px above the line
-          };
-        } else {
-          // Vertical segment - place label to the left of the line
-          return {
-            x: midX - labelWidth - 4, // 4px to the left
-            y: midY - labelHeight / 2,
-          };
-        }
+      // Check if midpoint is too close to source or target node
+      const tooCloseToSource = sourcePos && this.isPointNearNode(midX, midY, sourcePos, 20);
+      const tooCloseToTarget = targetPos && this.isPointNearNode(midX, midY, targetPos, 20);
+
+      if (!tooCloseToSource && !tooCloseToTarget && segmentLength > bestSegmentLength) {
+        bestSegmentLength = segmentLength;
+        bestSegmentIndex = i;
       }
-      accumulatedLength = nextAccumulated;
     }
 
-    // Fallback: use the geometric center
-    const lastPoint = waypoints[waypoints.length - 1];
-    return {
-      x: (lastPoint?.x ?? 0) - labelWidth / 2,
-      y: (lastPoint?.y ?? 0) - labelHeight - 4,
-    };
+    // If no good segment found, fall back to longest segment
+    if (bestSegmentIndex < 0) {
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const wpCurrent = waypoints[i];
+        const wpNext = waypoints[i + 1];
+        if (!wpCurrent || !wpNext) continue;
+
+        const segmentLength = distance(wpCurrent, wpNext);
+        if (segmentLength > bestSegmentLength) {
+          bestSegmentLength = segmentLength;
+          bestSegmentIndex = i;
+        }
+      }
+    }
+
+    if (bestSegmentIndex < 0) {
+      bestSegmentIndex = 0;
+    }
+
+    const wpStart = waypoints[bestSegmentIndex];
+    const wpEnd = waypoints[bestSegmentIndex + 1];
+
+    if (!wpStart || !wpEnd) {
+      return { x: 0, y: 0 };
+    }
+
+    // Calculate midpoint of the chosen segment
+    const midX = (wpStart.x + wpEnd.x) / 2;
+    const midY = (wpStart.y + wpEnd.y) / 2;
+
+    // Determine segment direction
+    const dx = wpEnd.x - wpStart.x;
+    const dy = wpEnd.y - wpStart.y;
+    const isHorizontal = Math.abs(dx) > Math.abs(dy);
+    const segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+    // Label offset from the edge line
+    const offset = 5;
+
+    if (isHorizontal) {
+      // Horizontal segment - place label above the line by default
+      let labelX = midX - labelWidth / 2;
+      let labelY = midY - labelHeight - offset;
+
+      // Check if label would overlap with any nearby node, if so place below
+      const labelBounds = { x: labelX, y: labelY, width: labelWidth, height: labelHeight };
+      if (this.labelOverlapsAnyNode(labelBounds)) {
+        labelY = midY + offset;
+      }
+
+      return { x: labelX, y: labelY };
+    } else {
+      // Vertical segment - for long vertical segments (like message flows),
+      // place label at various positions to avoid overlap with nodes AND other edge labels
+
+      // For long segments (like message flows), try multiple positions
+      // to find one that doesn't overlap with nodes or other labels
+      const positions = segmentLength > 80
+        ? [0.35, 0.5, 0.65, 0.2, 0.8, 0.15, 0.85]
+        : [0.5];
+
+      // Try each position with both right and left placement
+      for (const ratio of positions) {
+        const testY = wpStart.y + (wpEnd.y - wpStart.y) * ratio - labelHeight / 2;
+
+        // Try right side
+        const boundsRight = { x: midX + offset, y: testY, width: labelWidth, height: labelHeight };
+        if (!this.labelOverlapsAnyNode(boundsRight) && !this.labelOverlapsAnyEdgeLabel(boundsRight)) {
+          return { x: midX + offset, y: testY };
+        }
+
+        // Try left side
+        const boundsLeft = { x: midX - labelWidth - offset, y: testY, width: labelWidth, height: labelHeight };
+        if (!this.labelOverlapsAnyNode(boundsLeft) && !this.labelOverlapsAnyEdgeLabel(boundsLeft)) {
+          return { x: midX - labelWidth - offset, y: testY };
+        }
+      }
+
+      // Fallback: use midpoint, but offset Y if overlapping with other labels
+      let labelX = midX + offset;
+      let labelY = midY - labelHeight / 2;
+
+      // If overlapping with existing label, try different Y offsets
+      for (let yOffset = 0; yOffset <= 100; yOffset += 20) {
+        for (const side of [1, -1]) { // right side, then left side
+          for (const yDir of [0, 1, -1]) { // no offset, down, up
+            const testX = side === 1 ? midX + offset : midX - labelWidth - offset;
+            const testY = labelY + yDir * yOffset;
+            const testBounds = { x: testX, y: testY, width: labelWidth, height: labelHeight };
+
+            if (!this.labelOverlapsAnyEdgeLabel(testBounds)) {
+              // Found a position that doesn't overlap with other labels
+              // Check node overlap is secondary - we prefer no label overlap
+              if (!this.labelOverlapsAnyNode(testBounds)) {
+                return { x: testX, y: testY };
+              }
+              // Even if overlapping node, use this if no label overlap
+              labelX = testX;
+              labelY = testY;
+            }
+          }
+        }
+      }
+
+      return { x: labelX, y: labelY };
+    }
+  }
+
+  /**
+   * Check if a point is near a node (within padding distance)
+   */
+  private isPointNearNode(
+    x: number,
+    y: number,
+    nodePos: NodePosition,
+    padding: number
+  ): boolean {
+    return (
+      x >= nodePos.x - padding &&
+      x <= nodePos.x + nodePos.width + padding &&
+      y >= nodePos.y - padding &&
+      y <= nodePos.y + nodePos.height + padding
+    );
+  }
+
+  /**
+   * Check if a label bounds overlaps with any node
+   */
+  private labelOverlapsAnyNode(labelBounds: { x: number; y: number; width: number; height: number }): boolean {
+    for (const nodePos of this.nodePositions.values()) {
+      if (this.boundsOverlap(labelBounds, nodePos)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if a label bounds overlaps with any already placed edge label
+   */
+  private labelOverlapsAnyEdgeLabel(labelBounds: { x: number; y: number; width: number; height: number }): boolean {
+    for (const placedLabel of this.placedEdgeLabels) {
+      if (this.boundsOverlap(labelBounds, placedLabel)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if two rectangles overlap
+   */
+  private boundsOverlap(
+    a: { x: number; y: number; width: number; height: number },
+    b: { x: number; y: number; width: number; height: number }
+  ): boolean {
+    return !(
+      a.x + a.width < b.x ||
+      b.x + b.width < a.x ||
+      a.y + a.height < b.y ||
+      b.y + b.height < a.y
+    );
   }
 
   /**
@@ -619,6 +809,230 @@ export class DiagramBuilder {
         i++;
       } else {
         i++;
+      }
+    }
+  }
+
+  /**
+   * Detect which side of a node a point is connected to.
+   * Returns 'top', 'bottom', 'left', 'right', or 'unknown'.
+   *
+   * First tries exact match with tolerance, then falls back to closest edge detection.
+   */
+  private detectConnectionSide(
+    point: PointModel,
+    nodeBounds: NodePosition,
+    _isGateway: boolean = false
+  ): 'top' | 'bottom' | 'left' | 'right' | 'unknown' {
+    const exactTolerance = 3;
+    const maxTolerance = 15; // Maximum distance to consider for closest edge
+
+    const nodeTop = nodeBounds.y;
+    const nodeBottom = nodeBounds.y + nodeBounds.height;
+    const nodeLeft = nodeBounds.x;
+    const nodeRight = nodeBounds.x + nodeBounds.width;
+
+    // For regular nodes, check rectangular edges
+    // First, try exact match with small tolerance
+    if (Math.abs(point.y - nodeTop) <= exactTolerance) return 'top';
+    if (Math.abs(point.y - nodeBottom) <= exactTolerance) return 'bottom';
+    if (Math.abs(point.x - nodeLeft) <= exactTolerance) return 'left';
+    if (Math.abs(point.x - nodeRight) <= exactTolerance) return 'right';
+
+    // If no exact match, find the closest edge
+    const distToTop = Math.abs(point.y - nodeTop);
+    const distToBottom = Math.abs(point.y - nodeBottom);
+    const distToLeft = Math.abs(point.x - nodeLeft);
+    const distToRight = Math.abs(point.x - nodeRight);
+
+    const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
+
+    // Only use closest edge if it's within reasonable distance
+    if (minDist > maxTolerance) return 'unknown';
+
+    // Return the closest edge
+    if (minDist === distToTop) return 'top';
+    if (minDist === distToBottom) return 'bottom';
+    if (minDist === distToLeft) return 'left';
+    return 'right';
+  }
+
+  /**
+   * Detect connection side for gateway based on edge direction.
+   * When point is on a diagonal edge of the diamond, use the adjacent point to determine direction.
+   */
+  private detectGatewayConnectionSide(
+    point: PointModel,
+    adjacentPoint: PointModel,
+    nodeBounds: NodePosition,
+    isSource: boolean
+  ): 'top' | 'bottom' | 'left' | 'right' {
+    const centerX = nodeBounds.x + nodeBounds.width / 2;
+    const centerY = nodeBounds.y + nodeBounds.height / 2;
+    const nodeTop = nodeBounds.y;
+    const nodeBottom = nodeBounds.y + nodeBounds.height;
+    const nodeLeft = nodeBounds.x;
+    const nodeRight = nodeBounds.x + nodeBounds.width;
+
+    // Calculate distances to each diamond corner
+    const distToTopCorner = Math.abs(point.x - centerX) + Math.abs(point.y - nodeTop);
+    const distToBottomCorner = Math.abs(point.x - centerX) + Math.abs(point.y - nodeBottom);
+    const distToLeftCorner = Math.abs(point.x - nodeLeft) + Math.abs(point.y - centerY);
+    const distToRightCorner = Math.abs(point.x - nodeRight) + Math.abs(point.y - centerY);
+
+    const minDist = Math.min(distToTopCorner, distToBottomCorner, distToLeftCorner, distToRightCorner);
+
+    // If clearly closest to one corner, use that
+    const tolerance = 5;
+    if (distToTopCorner <= minDist + tolerance && distToTopCorner < distToBottomCorner - tolerance &&
+        distToTopCorner < distToLeftCorner - tolerance && distToTopCorner < distToRightCorner - tolerance) {
+      return 'top';
+    }
+    if (distToBottomCorner <= minDist + tolerance && distToBottomCorner < distToTopCorner - tolerance &&
+        distToBottomCorner < distToLeftCorner - tolerance && distToBottomCorner < distToRightCorner - tolerance) {
+      return 'bottom';
+    }
+    if (distToLeftCorner <= minDist + tolerance && distToLeftCorner < distToTopCorner - tolerance &&
+        distToLeftCorner < distToBottomCorner - tolerance && distToLeftCorner < distToRightCorner - tolerance) {
+      return 'left';
+    }
+    if (distToRightCorner <= minDist + tolerance && distToRightCorner < distToTopCorner - tolerance &&
+        distToRightCorner < distToBottomCorner - tolerance && distToRightCorner < distToLeftCorner - tolerance) {
+      return 'right';
+    }
+
+    // Ambiguous case: use edge direction to decide
+    // For source: look at direction TO adjacentPoint
+    // For target: look at direction FROM adjacentPoint
+    const dx = isSource ? (adjacentPoint.x - point.x) : (point.x - adjacentPoint.x);
+    const dy = isSource ? (adjacentPoint.y - point.y) : (point.y - adjacentPoint.y);
+
+    // If edge is more horizontal, prefer left/right connection
+    // If edge is more vertical, prefer top/bottom connection
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal direction - use left or right
+      return dx > 0 ? 'right' : 'left';
+    } else {
+      // Vertical direction - use top or bottom
+      return dy > 0 ? 'bottom' : 'top';
+    }
+  }
+
+  /**
+   * Ensure edge endpoints connect perpendicular to node borders.
+   * - Connection to top/bottom: last segment must be vertical (same x)
+   * - Connection to left/right: last segment must be horizontal (same y)
+   *
+   * When inserting bend points, we also update the previous waypoint to maintain
+   * orthogonality (no diagonal lines).
+   */
+  private ensurePerpendicularEndpoints(
+    waypoints: PointModel[],
+    sourceId: string | undefined,
+    targetId: string | undefined,
+    sourceIsGateway: boolean = false,
+    targetIsGateway: boolean = false
+  ): void {
+    if (waypoints.length < 2) return;
+
+    const tolerance = 2;
+    const minBendOffset = 15; // Minimum distance for bend point from endpoint
+
+    // Process target endpoint (end of edge)
+    if (targetId) {
+      const targetPos = this.nodePositions.get(targetId);
+      if (targetPos) {
+        const lastIdx = waypoints.length - 1;
+        const endPoint = waypoints[lastIdx];
+        const prevPoint = waypoints[lastIdx - 1];
+
+        if (endPoint && prevPoint) {
+          const side = targetIsGateway
+            ? this.detectGatewayConnectionSide(endPoint, prevPoint, targetPos, false)
+            : this.detectConnectionSide(endPoint, targetPos, false);
+
+          if (side === 'top' || side === 'bottom') {
+            // Vertical edge - last segment must be vertical (x should be same)
+            if (Math.abs(endPoint.x - prevPoint.x) > tolerance) {
+              // Need to insert a bend point to make it vertical
+              // Calculate bend point Y position
+              const bendY = side === 'top'
+                ? endPoint.y - minBendOffset
+                : endPoint.y + minBendOffset;
+
+              // Insert bend point and update previous point to maintain orthogonality
+              // Path: ... -> prevPoint -> bendPoint -> endPoint
+              // bendPoint.x = endPoint.x (vertical final segment)
+              // bendPoint.y = bendY
+              // prevPoint needs to have y = bendY to make prevPoint->bendPoint horizontal
+              const bendPoint: PointModel = { x: endPoint.x, y: bendY };
+              waypoints.splice(lastIdx, 0, bendPoint);
+
+              // Update prevPoint's y to match bendY for orthogonality
+              prevPoint.y = bendY;
+            }
+          } else if (side === 'left' || side === 'right') {
+            // Horizontal edge - last segment must be horizontal (y should be same)
+            if (Math.abs(endPoint.y - prevPoint.y) > tolerance) {
+              // Need to insert a bend point to make it horizontal
+              const bendX = side === 'left'
+                ? endPoint.x - minBendOffset
+                : endPoint.x + minBendOffset;
+
+              const bendPoint: PointModel = { x: bendX, y: endPoint.y };
+              waypoints.splice(lastIdx, 0, bendPoint);
+
+              // Update prevPoint's x to match bendX for orthogonality
+              prevPoint.x = bendX;
+            }
+          }
+        }
+      }
+    }
+
+    // Process source endpoint (start of edge)
+    if (sourceId) {
+      // Check both nodePositions and boundaryEventPositions for source
+      const sourcePos = this.nodePositions.get(sourceId) ?? this.boundaryEventPositions.get(sourceId);
+      if (sourcePos) {
+        const startPoint = waypoints[0];
+        const nextPoint = waypoints[1];
+
+        if (startPoint && nextPoint) {
+          const side = sourceIsGateway
+            ? this.detectGatewayConnectionSide(startPoint, nextPoint, sourcePos, true)
+            : this.detectConnectionSide(startPoint, sourcePos, false);
+
+          if (side === 'top' || side === 'bottom') {
+            // Vertical edge - first segment must be vertical (x should be same)
+            if (Math.abs(startPoint.x - nextPoint.x) > tolerance) {
+              // Need to insert a bend point to make it vertical
+              const bendY = side === 'top'
+                ? startPoint.y - minBendOffset
+                : startPoint.y + minBendOffset;
+
+              const bendPoint: PointModel = { x: startPoint.x, y: bendY };
+              waypoints.splice(1, 0, bendPoint);
+
+              // Update nextPoint's y to match bendY for orthogonality
+              nextPoint.y = bendY;
+            }
+          } else if (side === 'left' || side === 'right') {
+            // Horizontal edge - first segment must be horizontal (y should be same)
+            if (Math.abs(startPoint.y - nextPoint.y) > tolerance) {
+              // Need to insert a bend point to make it horizontal
+              const bendX = side === 'left'
+                ? startPoint.x - minBendOffset
+                : startPoint.x + minBendOffset;
+
+              const bendPoint: PointModel = { x: bendX, y: startPoint.y };
+              waypoints.splice(1, 0, bendPoint);
+
+              // Update nextPoint's x to match bendX for orthogonality
+              nextPoint.x = bendX;
+            }
+          }
+        }
       }
     }
   }

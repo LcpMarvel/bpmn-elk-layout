@@ -8,3 +8,4 @@ export * from './artifact-positioner';
 export * from './group-positioner';
 export * from './lane-arranger';
 export * from './pool-arranger';
+export * from './compactor';

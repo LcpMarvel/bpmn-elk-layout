@@ -17,6 +17,11 @@ export interface BpmnElkLayoutOptions {
    * ELK layout options to override defaults
    */
   elkOptions?: ElkLayoutOptions;
+  /**
+   * Enable layout compaction to reduce unnecessary whitespace
+   * @default false
+   */
+  enableCompaction?: boolean;
 }
 
 export class BpmnElkLayout {
@@ -25,7 +30,10 @@ export class BpmnElkLayout {
   private xmlGenerator: BpmnXmlGenerator;
 
   constructor(options?: BpmnElkLayoutOptions) {
-    this.layouter = new ElkLayouter({ elkOptions: options?.elkOptions });
+    this.layouter = new ElkLayouter({
+      elkOptions: options?.elkOptions,
+      enableCompaction: options?.enableCompaction,
+    });
     this.modelBuilder = new ModelBuilder();
     this.xmlGenerator = new BpmnXmlGenerator();
   }

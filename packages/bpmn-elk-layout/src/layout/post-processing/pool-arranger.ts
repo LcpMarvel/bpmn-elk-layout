@@ -1,13 +1,15 @@
 /**
  * Pool Arranger
  * Handles rearranging pools (participants) within collaborations.
- * Pools are stacked vertically and message flows are recalculated.
+ * Uses ConstraintSolver for vertical stacking calculations.
  */
 
 import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, Point, Bounds, ArtifactInfo } from '../../types/internal';
 import { ARTIFACT_TYPES } from './artifact-positioner';
+import { ConstraintSolver } from '../constraint';
+import { isDebugEnabled, DEBUG } from '../../utils/debug';
 
 /**
  * Handler for pool arrangement
@@ -15,9 +17,9 @@ import { ARTIFACT_TYPES } from './artifact-positioner';
 export class PoolArranger {
   private readonly poolHeaderWidth = 55;
   private readonly poolPaddingX = 25;
-  private readonly poolPaddingY = 20;
+  private readonly poolPaddingY = 40;
   private readonly minPoolHeight = 100;
-  private readonly poolExtraWidth = 50;
+  private readonly poolExtraWidth = 140;
   private readonly poolExtraHeight = 80;
 
   /**
@@ -97,30 +99,51 @@ export class PoolArranger {
       }
     }
 
-    // Stack pools vertically
-    let currentY = 0;
-    const nodePositions = new Map<string, Bounds>();
-
+    // Calculate heights and prepare pools
+    const poolHeights = new Map<string, number>();
     for (const pool of pools) {
       const origPool = origPoolMap.get(pool.id);
       const isBlackBox = origPool?.bpmn?.isBlackBox === true;
       const hasLanes = (origPool?.children as NodeWithBpmn[] | undefined)?.some(c => c.bpmn?.type === 'lane');
 
-      pool.x = 0;
-      pool.y = currentY;
-
+      pool.width = maxPoolWidth;
       if (isBlackBox) {
-        pool.width = maxPoolWidth;
-        pool.height = 60;  // Force 60px for black-box pools (ignore any preset value)
-      } else if (hasLanes) {
-        pool.width = maxPoolWidth;
-      } else {
-        pool.width = maxPoolWidth;
+        pool.height = 60;
+      } else if (!hasLanes) {
         pool.height = (pool.height ?? 200) + this.poolExtraHeight;
-        this.offsetPoolChildren(pool, this.poolExtraHeight / 2);
+        this.offsetPoolChildren(pool, this.poolExtraWidth / 2, this.poolExtraHeight / 2);
       }
+      poolHeights.set(pool.id, pool.height ?? 200);
+    }
 
-      // Store pool position
+    // Use ConstraintSolver for vertical stacking
+    const solver = new ConstraintSolver();
+    for (const pool of pools) {
+      const height = poolHeights.get(pool.id) ?? 200;
+      solver.addNode(pool.id, 0, 0, maxPoolWidth, height);
+    }
+
+    // Add below constraints for sequential stacking
+    for (let i = 1; i < pools.length; i++) {
+      solver.addConstraint({
+        type: 'below',
+        node: pools[i].id,
+        reference: pools[i - 1].id,
+        minGap: 0,
+        strength: 'required',
+      });
+    }
+
+    const positions = solver.solve();
+    const nodePositions = new Map<string, Bounds>();
+
+    // Apply solved positions
+    let totalHeight = 0;
+    for (const pool of pools) {
+      const pos = positions.get(pool.id);
+      pool.x = 0;
+      pool.y = pos?.y ?? totalHeight;
+
       nodePositions.set(pool.id, {
         x: pool.x,
         y: pool.y,
@@ -128,15 +151,13 @@ export class PoolArranger {
         height: pool.height ?? 200,
       });
 
-      // Collect node positions
       this.collectNodePositionsInPool(pool, pool.x, pool.y, nodePositions);
-
-      currentY += (pool.height ?? 200);
+      totalHeight = pool.y + (pool.height ?? 200);
     }
 
     // Update collaboration dimensions
     collab.width = maxPoolWidth;
-    collab.height = currentY;
+    collab.height = totalHeight;
 
     // Recalculate message flows
     if (collab.edges && origCollab.edges) {
@@ -365,24 +386,36 @@ export class PoolArranger {
   /**
    * Offset all children within a pool
    */
-  private offsetPoolChildren(pool: ElkNode, offsetY: number): void {
+  private offsetPoolChildren(pool: ElkNode, offsetX: number, offsetY: number): void {
     if (!pool.children) return;
 
     for (const child of pool.children) {
+      if (child.x !== undefined) {
+        child.x += offsetX;
+      }
       if (child.y !== undefined) {
         child.y += offsetY;
       }
-      this.offsetPoolChildren(child, 0);
+      this.offsetPoolChildren(child, 0, 0);
     }
 
     if (pool.edges) {
       for (const edge of pool.edges) {
         if (edge.sections) {
           for (const section of edge.sections) {
-            if (section.startPoint) section.startPoint.y += offsetY;
-            if (section.endPoint) section.endPoint.y += offsetY;
+            if (section.startPoint) {
+              section.startPoint.x += offsetX;
+              section.startPoint.y += offsetY;
+            }
+            if (section.endPoint) {
+              section.endPoint.x += offsetX;
+              section.endPoint.y += offsetY;
+            }
             if (section.bendPoints) {
-              for (const bp of section.bendPoints) bp.y += offsetY;
+              for (const bp of section.bendPoints) {
+                bp.x += offsetX;
+                bp.y += offsetY;
+              }
             }
           }
         }
@@ -434,6 +467,15 @@ export class PoolArranger {
       }
     }
 
+    // Identify blackbox pools (pools with no children or very small height)
+    const blackboxPoolIds = new Set<string>();
+    for (const pool of pools) {
+      const isBlackbox = !pool.children || pool.children.length === 0 || (pool.height ?? 0) <= 80;
+      if (isBlackbox) {
+        blackboxPoolIds.add(pool.id);
+      }
+    }
+
     for (const edge of edges) {
       const sourceId = edge.sources?.[0];
       const targetId = edge.targets?.[0];
@@ -453,7 +495,7 @@ export class PoolArranger {
       if (isSequenceFlow) {
         this.createSequenceFlowWaypoints(sourcePos, targetPos, waypoints);
       } else if (isMessageFlow) {
-        this.createMessageFlowWaypoints(sourcePos, targetPos, waypoints);
+        this.createMessageFlowWaypoints(sourcePos, targetPos, waypoints, nodePositions, targetId, sourceId, blackboxPoolIds);
       } else if (isDataAssociation) {
         (edge as ElkExtendedEdge & { _absoluteCoords?: boolean })._absoluteCoords = true;
         edge.sections = [];
@@ -553,36 +595,284 @@ export class PoolArranger {
 
   /**
    * Create waypoints for message flows
+   * Routes message flows to avoid being too close to other nodes in the target pool
    */
   private createMessageFlowWaypoints(
     sourcePos: Bounds,
     targetPos: Bounds,
-    waypoints: Point[]
+    waypoints: Point[],
+    nodePositions: Map<string, Bounds>,
+    targetId?: string,
+    sourceId?: string,
+    blackboxPoolIds?: Set<string>
   ): void {
     let startX: number, startY: number, endX: number, endY: number;
 
-    if (sourcePos.y + sourcePos.height < targetPos.y) {
+    const goingDown = sourcePos.y + sourcePos.height < targetPos.y;
+
+    // Check if target/source is a blackbox participant using the passed set
+    const isTargetBlackbox = targetId ? blackboxPoolIds?.has(targetId) ?? false : false;
+    const isSourceBlackbox = sourceId ? blackboxPoolIds?.has(sourceId) ?? false : false;
+
+    if (goingDown) {
       startX = sourcePos.x + sourcePos.width / 2;
       startY = sourcePos.y + sourcePos.height;
-      endX = targetPos.x + targetPos.width / 2;
+
+      // For blackbox targets, prefer connecting directly below the source if within target's X range
+      if (isTargetBlackbox) {
+        const targetLeft = targetPos.x;
+        const targetRight = targetPos.x + targetPos.width;
+        // Use source's X if it falls within target's range (with some margin)
+        if (startX >= targetLeft + 20 && startX <= targetRight - 20) {
+          endX = startX;
+        } else {
+          endX = targetPos.x + targetPos.width / 2;
+        }
+      } else {
+        endX = targetPos.x + targetPos.width / 2;
+      }
       endY = targetPos.y;
     } else {
       startX = sourcePos.x + sourcePos.width / 2;
       startY = sourcePos.y;
-      endX = targetPos.x + targetPos.width / 2;
+
+      // For blackbox targets, prefer connecting directly above the source if within target's X range
+      if (isTargetBlackbox) {
+        const targetLeft = targetPos.x;
+        const targetRight = targetPos.x + targetPos.width;
+        if (startX >= targetLeft + 20 && startX <= targetRight - 20) {
+          endX = startX;
+        } else {
+          endX = targetPos.x + targetPos.width / 2;
+        }
+      } else {
+        endX = targetPos.x + targetPos.width / 2;
+      }
       endY = targetPos.y + targetPos.height;
     }
 
-    waypoints.push({ x: startX, y: startY });
-
-    const horizontalDist = Math.abs(startX - endX);
-    if (horizontalDist > 5) {
-      const routeY = horizontalDist > 200 ? endY - 20 : (startY + endY) / 2;
-      waypoints.push({ x: startX, y: routeY });
-      waypoints.push({ x: endX, y: routeY });
+    // Similarly, for blackbox sources, adjust startX to align with endX if possible
+    if (isSourceBlackbox) {
+      const sourceLeft = sourcePos.x;
+      const sourceRight = sourcePos.x + sourcePos.width;
+      if (endX >= sourceLeft + 20 && endX <= sourceRight - 20) {
+        startX = endX;
+      }
     }
 
-    waypoints.push({ x: endX, y: endY });
+    // Patterns to identify containers (pools, lanes, etc.) vs flow nodes
+    const containerPatterns = [/^pool_/, /^participant_/, /^lane_/, /^process_/, /^collaboration_/];
+    const minClearance = 25; // Minimum distance to keep from nodes
+
+    // Calculate the Y range of source and target pools (approximate)
+    const sourcePoolYMin = sourcePos.y - 50;
+    const sourcePoolYMax = sourcePos.y + sourcePos.height + 50;
+    const targetPoolYMin = targetPos.y - 50;
+    const targetPoolYMax = targetPos.y + targetPos.height + 50;
+
+    // First, check if a straight vertical line from startX would hit any obstacles
+    // This applies to ALL message flows, not just those with horizontal distance
+    const fullVerticalMinY = Math.min(startY, endY);
+    const fullVerticalMaxY = Math.max(startY, endY);
+
+    // Collect all nodes that would block a straight vertical path at startX
+    const nodesBlockingDirectPath: Array<{ id: string; bounds: Bounds }> = [];
+    for (const [nodeId, bounds] of nodePositions) {
+      if (nodeId === targetId || nodeId === sourceId) continue;
+
+      // Skip container nodes
+      const isContainer = containerPatterns.some(pattern => pattern.test(nodeId));
+      if (isContainer) continue;
+
+      const nodeLeft = bounds.x;
+      const nodeRight = bounds.x + bounds.width;
+      const nodeTop = bounds.y;
+      const nodeBottom = bounds.y + bounds.height;
+
+      // Skip nodes in source/target pool
+      const inSourcePool = nodeTop >= sourcePoolYMin && nodeBottom <= sourcePoolYMax;
+      const inTargetPool = nodeTop >= targetPoolYMin && nodeBottom <= targetPoolYMax;
+      if (inSourcePool || inTargetPool) continue;
+
+      // Check if node blocks the vertical line at startX
+      const overlapsVerticalLine = startX >= nodeLeft - minClearance && startX <= nodeRight + minClearance;
+      const nodeInVerticalRange = nodeBottom > fullVerticalMinY && nodeTop < fullVerticalMaxY;
+
+      if (overlapsVerticalLine && nodeInVerticalRange) {
+        nodesBlockingDirectPath.push({ id: nodeId, bounds });
+      }
+    }
+
+    // If there are obstacles in the direct path, we need to find a clear route
+    let finalRouteX = startX;
+    if (nodesBlockingDirectPath.length > 0) {
+      // Find a clear X position that avoids ALL obstacles in the vertical path
+      // Try both left and right directions and pick the one with smaller shift
+
+      // Collect all obstacle X ranges
+      const allObstacles: Array<{ left: number; right: number }> = [];
+      for (const { bounds } of nodesBlockingDirectPath) {
+        allObstacles.push({
+          left: bounds.x - minClearance,
+          right: bounds.x + bounds.width + minClearance,
+        });
+      }
+
+      // Also check for other nodes that might be in the way at potential route positions
+      // We need to find a gap that's clear all the way down
+      for (const [nodeId, bounds] of nodePositions) {
+        if (nodeId === targetId || nodeId === sourceId) continue;
+        const isContainer = containerPatterns.some(pattern => pattern.test(nodeId));
+        if (isContainer) continue;
+
+        const nodeTop = bounds.y;
+        const nodeBottom = bounds.y + bounds.height;
+        const inSourcePool = nodeTop >= sourcePoolYMin && nodeBottom <= sourcePoolYMax;
+        const inTargetPool = nodeTop >= targetPoolYMin && nodeBottom <= targetPoolYMax;
+        if (inSourcePool || inTargetPool) continue;
+
+        const nodeInVerticalRange = nodeBottom > fullVerticalMinY && nodeTop < fullVerticalMaxY;
+        if (nodeInVerticalRange) {
+          allObstacles.push({
+            left: bounds.x - minClearance,
+            right: bounds.x + bounds.width + minClearance,
+          });
+        }
+      }
+
+      // Sort obstacles by left edge
+      allObstacles.sort((a, b) => a.left - b.left);
+
+      // Merge overlapping obstacles
+      const mergedObstacles: Array<{ left: number; right: number }> = [];
+      for (const obs of allObstacles) {
+        if (mergedObstacles.length === 0) {
+          mergedObstacles.push({ ...obs });
+        } else {
+          const last = mergedObstacles[mergedObstacles.length - 1];
+          if (obs.left <= last.right) {
+            last.right = Math.max(last.right, obs.right);
+          } else {
+            mergedObstacles.push({ ...obs });
+          }
+        }
+      }
+
+      // Find the best route X - either to the left of all obstacles or to the right
+      // or in a gap between obstacles
+      let bestRouteX = startX;
+      let bestShift = Infinity;
+
+      // Option 1: Go to the left of all obstacles
+      if (mergedObstacles.length > 0) {
+        const leftMost = mergedObstacles[0].left;
+        if (leftMost > 20) { // Make sure we don't go off the diagram
+          const shiftNeeded = Math.abs(startX - leftMost);
+          if (shiftNeeded < bestShift) {
+            bestShift = shiftNeeded;
+            bestRouteX = leftMost;
+          }
+        }
+      }
+
+      // Option 2: Go to the right of all obstacles
+      if (mergedObstacles.length > 0) {
+        const rightMost = mergedObstacles[mergedObstacles.length - 1].right;
+        const shiftNeeded = Math.abs(startX - rightMost);
+        if (shiftNeeded < bestShift) {
+          bestShift = shiftNeeded;
+          bestRouteX = rightMost;
+        }
+      }
+
+      // Option 3: Find a gap between obstacles that's close to startX
+      for (let i = 0; i < mergedObstacles.length - 1; i++) {
+        const gapLeft = mergedObstacles[i].right;
+        const gapRight = mergedObstacles[i + 1].left;
+        const gapWidth = gapRight - gapLeft;
+
+        if (gapWidth >= 10) { // Minimum gap width
+          const gapCenter = (gapLeft + gapRight) / 2;
+          const shiftNeeded = Math.abs(startX - gapCenter);
+          if (shiftNeeded < bestShift) {
+            bestShift = shiftNeeded;
+            bestRouteX = gapCenter;
+          }
+        }
+      }
+
+      finalRouteX = bestRouteX;
+    }
+
+    // Now determine if we need horizontal routing
+    const horizontalDist = Math.abs(startX - endX);
+
+    waypoints.push({ x: startX, y: startY });
+
+    // Check if we need to route around obstacles (finalRouteX differs from startX)
+    // This only applies when startX and endX are close (blackbox case)
+    const needsObstacleAvoidance = Math.abs(finalRouteX - startX) > 5 && horizontalDist <= 5;
+
+    if (needsObstacleAvoidance) {
+      // Route around obstacles for blackbox: go horizontally to finalRouteX, then vertically, then horizontally to endX
+      waypoints.push({ x: finalRouteX, y: startY });
+      waypoints.push({ x: finalRouteX, y: endY });
+      if (Math.abs(finalRouteX - endX) > 5) {
+        waypoints.push({ x: endX, y: endY });
+      }
+    } else if (horizontalDist > 5) {
+      // Normal horizontal routing (source and target at different X)
+      let routeY = horizontalDist > 200 ? endY - 20 : (startY + endY) / 2;
+
+      // Adjust routeY to avoid nodes in the horizontal path
+      if (targetId) {
+        const minX = Math.min(startX, endX);
+        const maxX = Math.max(startX, endX);
+
+        for (const [nodeId, bounds] of nodePositions) {
+          if (nodeId === targetId || nodeId === sourceId) continue;
+
+          const nodeLeft = bounds.x;
+          const nodeRight = bounds.x + bounds.width;
+          const nodeTop = bounds.y;
+          const nodeBottom = bounds.y + bounds.height;
+
+          const overlapsHorizontally = nodeRight > minX && nodeLeft < maxX;
+
+          if (overlapsHorizontally) {
+            if (goingDown) {
+              if (routeY >= nodeTop && routeY <= nodeBottom) {
+                routeY = Math.min(routeY, nodeTop - minClearance);
+              } else if (nodeTop > startY && nodeTop < endY) {
+                routeY = Math.min(routeY, nodeTop - minClearance);
+              }
+            } else {
+              if (routeY >= nodeTop && routeY <= nodeBottom) {
+                routeY = Math.min(routeY, nodeTop - minClearance);
+              } else if (nodeTop < startY && nodeBottom > endY) {
+                routeY = Math.min(routeY, nodeTop - minClearance);
+              }
+            }
+          }
+        }
+
+        // Keep routeY in reasonable range
+        if (goingDown) {
+          routeY = Math.max(routeY, startY + 10);
+          routeY = Math.min(routeY, endY - 10);
+        } else {
+          routeY = Math.max(routeY, endY + 10);
+          routeY = Math.min(routeY, startY - 10);
+        }
+      }
+
+      waypoints.push({ x: startX, y: routeY });
+      waypoints.push({ x: endX, y: routeY });
+      waypoints.push({ x: endX, y: endY });
+    } else {
+      // Direct vertical path - no obstacles and same X position
+      waypoints.push({ x: endX, y: endY });
+    }
   }
 
   /**

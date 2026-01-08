@@ -22,3 +22,10 @@ export {
   getDiamondCorners,
   isPointOnDiamondEdge,
 } from './gateway-endpoint-adjuster';
+export {
+  PathfindingRouter,
+  routeEdges,
+  findPathAvoidingObstacles,
+  type PathfindingOptions,
+  type RouteResult,
+} from './pathfinding-router';

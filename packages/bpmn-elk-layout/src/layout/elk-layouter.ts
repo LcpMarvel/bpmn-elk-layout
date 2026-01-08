@@ -1,62 +1,59 @@
 /**
  * ELK Layout Engine Wrapper
  * Orchestrates the BPMN layout pipeline using specialized handlers.
+ *
+ * Lightweight post-processing: Only repositions boundary event targets below main flow.
+ * ELK handles all edge routing.
  */
 
 import ELK from 'elkjs';
 import type { ElkNode } from 'elkjs';
 import type { ElkBpmnGraph, ElkLayoutOptions } from '../types';
 import type { LayoutedGraph } from '../types/elk-output';
-import type { NodeMoveInfo } from '../types/internal';
 import { SizeCalculator } from './size-calculator';
-import { EdgeFixer } from './edge-routing/edge-fixer';
 import { BoundaryEventHandler } from './post-processing/boundary-event';
 import { ArtifactPositioner } from './post-processing/artifact-positioner';
 import { GroupPositioner } from './post-processing/group-positioner';
 import { LaneArranger } from './post-processing/lane-arranger';
 import { PoolArranger } from './post-processing/pool-arranger';
-import { GatewayEdgeAdjuster } from './post-processing/gateway-edge-adjuster';
+import { Compactor } from './post-processing/compactor';
 import { ElkGraphPreparer } from './preparation/elk-graph-preparer';
 import { ResultMerger } from './preparation/result-merger';
-import { MainFlowNormalizer } from './normalization/main-flow-normalizer';
-import { GatewayPropagator } from './normalization/gateway-propagator';
 import { isDebugEnabled } from '../utils/debug';
 
 export interface ElkLayouterOptions {
   elkOptions?: ElkLayoutOptions;
+  /** Enable layout compaction to reduce whitespace */
+  enableCompaction?: boolean;
 }
 
 export class ElkLayouter {
   private elk: InstanceType<typeof ELK>;
   private userOptions: ElkLayoutOptions;
+  private enableCompaction: boolean;
   private sizeCalculator: SizeCalculator;
-  private edgeFixer: EdgeFixer;
   private boundaryEventHandler: BoundaryEventHandler;
   private artifactPositioner: ArtifactPositioner;
   private groupPositioner: GroupPositioner;
   private laneArranger: LaneArranger;
   private poolArranger: PoolArranger;
-  private gatewayEdgeAdjuster: GatewayEdgeAdjuster;
+  private compactor: Compactor;
   private graphPreparer: ElkGraphPreparer;
   private resultMerger: ResultMerger;
-  private mainFlowNormalizer: MainFlowNormalizer;
-  private gatewayPropagator: GatewayPropagator;
 
   constructor(options?: ElkLayouterOptions) {
     this.elk = new ELK();
     this.userOptions = options?.elkOptions ?? {};
+    this.enableCompaction = options?.enableCompaction ?? false;
     this.sizeCalculator = new SizeCalculator();
-    this.edgeFixer = new EdgeFixer();
     this.boundaryEventHandler = new BoundaryEventHandler();
     this.artifactPositioner = new ArtifactPositioner();
     this.groupPositioner = new GroupPositioner();
     this.laneArranger = new LaneArranger();
     this.poolArranger = new PoolArranger();
-    this.gatewayEdgeAdjuster = new GatewayEdgeAdjuster();
+    this.compactor = new Compactor();
     this.graphPreparer = new ElkGraphPreparer();
     this.resultMerger = new ResultMerger();
-    this.mainFlowNormalizer = new MainFlowNormalizer();
-    this.gatewayPropagator = new GatewayPropagator();
   }
 
   /**
@@ -69,7 +66,7 @@ export class ElkLayouter {
     // Apply default sizes to all nodes
     const sizedGraph = this.sizeCalculator.applyDefaultSizes(graphCopy);
 
-    // Collect boundary event info for post-processing
+    // Collect boundary event info - used to set ELK constraints for target nodes
     const boundaryEventInfo = this.boundaryEventHandler.collectInfo(sizedGraph);
 
     // Collect boundary event target IDs for ELK constraint assignment
@@ -82,44 +79,22 @@ export class ElkLayouter {
     const groupInfo = this.groupPositioner.collectInfo(sizedGraph);
 
     // Prepare graph for ELK (convert to ELK format)
+    // Pass boundaryEventTargetIds so ELK can apply position constraints
     const elkGraph = this.graphPreparer.prepare(sizedGraph, this.userOptions, boundaryEventTargetIds);
 
     // Run ELK layout
     const layoutedElkGraph = await this.elk.layout(elkGraph);
 
-    // Identify main flow nodes for normalization
-    const mainFlowNodes = this.graphPreparer.identifyMainFlowNodes(sizedGraph, boundaryEventTargetIds);
-
-    // Normalize main flow to the top of the diagram
-    // This ensures the primary flow path stays at a consistent Y position
-    this.mainFlowNormalizer.normalize(layoutedElkGraph, mainFlowNodes, boundaryEventTargetIds, sizedGraph);
-
-    // Check if boundary event targets need repositioning
-    // Pass sizedGraph to access node type information (bpmn.type) which is not preserved in ELK graph
-    const movedNodes = this.boundaryEventHandler.identifyNodesToMove(layoutedElkGraph, boundaryEventInfo, sizedGraph, isDebugEnabled());
+    // Lightweight post-processing: Move boundary event targets below their attached tasks
+    // This is BPMN-specific positioning that ELK cannot handle via constraints
+    const movedNodes = this.boundaryEventHandler.identifyNodesToMove(
+      layoutedElkGraph, boundaryEventInfo, sizedGraph, isDebugEnabled()
+    );
 
     if (movedNodes.size > 0) {
-      // Move nodes and recalculate affected edges
+      // Move nodes
       this.boundaryEventHandler.applyNodeMoves(layoutedElkGraph, movedNodes);
-
-      // Reposition converging gateways based on incoming edge positions
-      const gatewayMoves = this.boundaryEventHandler.repositionConvergingGateways(
-        layoutedElkGraph, movedNodes, boundaryEventInfo, isDebugEnabled()
-      );
-
-      if (gatewayMoves.size > 0) {
-        // Apply gateway moves
-        this.boundaryEventHandler.applyNodeMoves(layoutedElkGraph, gatewayMoves);
-
-        // Also move downstream nodes of the gateway
-        this.gatewayPropagator.propagate(layoutedElkGraph, gatewayMoves, mainFlowNodes);
-      }
-
-      // Merge gateway moves into movedNodes for edge recalculation
-      for (const [id, move] of gatewayMoves) {
-        movedNodes.set(id, move);
-      }
-
+      // Recalculate edges for moved nodes
       this.boundaryEventHandler.recalculateEdgesForMovedNodes(layoutedElkGraph, movedNodes, boundaryEventInfo);
     }
 
@@ -138,14 +113,13 @@ export class ElkLayouter {
     // Recalculate artifact edges with obstacle avoidance
     this.artifactPositioner.recalculateWithObstacleAvoidance(layoutedElkGraph, artifactInfo);
 
-    // Fix edges that cross through nodes (especially return edges in complex flows)
-    this.edgeFixer.fix(layoutedElkGraph);
+    // Apply layout compaction to reduce whitespace (if enabled)
+    if (this.enableCompaction) {
+      this.compactor.compact(layoutedElkGraph);
+    }
 
     // Update container bounds to include all moved children
     this.updateContainerBounds(layoutedElkGraph);
-
-    // Note: Gateway edge endpoint adjustment is now handled in model-builder.ts
-    // during the buildEdge() step, which has access to the correct coordinate system.
 
     // Merge layout results back with BPMN metadata
     return this.resultMerger.merge(sizedGraph, layoutedElkGraph);
