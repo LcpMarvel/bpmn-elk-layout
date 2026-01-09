@@ -113,7 +113,11 @@ export class ModelBuilder {
 
     // Process top-level children
     for (const child of graph.children) {
-      const bpmnType = (child as { bpmn: { type: string } }).bpmn.type;
+      const bpmnType = (child as { bpmn: { type: string } }).bpmn?.type;
+
+      if (!bpmnType) {
+        throw new Error(`Invalid graph child: missing bpmn.type property for node ${(child as any).id}`);
+      }
 
       if (bpmnType === 'collaboration') {
         definitions.rootElements.push(this.buildCollaboration(child as CollaborationNode));
@@ -130,7 +134,13 @@ export class ModelBuilder {
         }
       } else if (bpmnType === 'process') {
         definitions.rootElements.push(this.buildProcess(child as ProcessNode));
+      } else {
+        throw new Error(`Invalid top-level element type: "${bpmnType}". Only "process" or "collaboration" are allowed at the top level.`);
       }
+    }
+
+    if (definitions.rootElements.length === 0) {
+      throw new Error('Cannot create BPMN definitions: no valid process or collaboration found in the graph.');
     }
 
     return definitions;

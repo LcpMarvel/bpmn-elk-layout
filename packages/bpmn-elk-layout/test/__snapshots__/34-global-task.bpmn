@@ -77,6 +77,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gateway_split_di" bpmnElement="gateway_split">
         <dc:Bounds x="308" y="35.33333333333333" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="283" y="17.33333333333333" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="call_global_manual_task_di" bpmnElement="call_global_manual_task">
         <dc:Bounds x="378" y="112" width="100" height="80" />
@@ -92,6 +95,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gateway_join_di" bpmnElement="gateway_join">
         <dc:Bounds x="498" y="35.33333333333333" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="473" y="17.33333333333333" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="call_global_business_rule_di" bpmnElement="call_global_business_rule">
         <dc:Bounds x="568" y="20.333333333333332" width="100" height="80" />

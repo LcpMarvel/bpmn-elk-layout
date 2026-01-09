@@ -58,7 +58,10 @@ export class DiagramBuilder {
 
     // Find the main bpmn element for the plane
     const mainElement = definitions.rootElements[0];
-    const planeElement = mainElement?.type === 'collaboration' ? mainElement.id : mainElement?.id ?? graph.id;
+    if (!mainElement) {
+      throw new Error('Cannot create BPMN diagram: definitions.rootElements is empty. The graph must contain at least one process or collaboration.');
+    }
+    const planeElement = mainElement.type === 'collaboration' ? mainElement.id : mainElement.id;
 
     // Build shapes and edges
     for (const child of graph.children) {
@@ -314,57 +317,54 @@ export class DiagramBuilder {
       shape.isHorizontal = true;
     }
 
-    // Add label if present
-    if (node.labels && node.labels.length > 0) {
-      const label = node.labels[0];
-      if (!label) return shape;
-      const nodeWidth = node.width ?? 36;
-      const nodeHeight = node.height ?? 36;
+    // Add label positioning for elements that need external labels
+    // Priority: use explicit labels data if present, otherwise generate from bpmn.name
+    const nodeWidth = node.width ?? 36;
+    const nodeHeight = node.height ?? 36;
+    const label = node.labels?.[0];
+    const labelText = node.bpmn?.name ?? label?.text ?? '';
 
+    if (this.isEventType(node.bpmn?.type) && labelText) {
       // For events (circles), position the label below the shape (bpmn-js default behavior)
-      if (this.isEventType(node.bpmn?.type)) {
-        const labelWidth = label.width ?? 100;
-        const labelHeight = label.height ?? 14;
+      const labelWidth = label?.width ?? 100;
+      const labelHeight = label?.height ?? 14;
 
-        // Position label below the event circle, horizontally centered (using absolute coords)
-        shape.label = {
-          bounds: {
-            x: absoluteX + (nodeWidth - labelWidth) / 2,
-            y: absoluteY + nodeHeight + 4, // 4px gap below the circle
-            width: labelWidth,
-            height: labelHeight,
-          },
-        };
-      } else if (this.isGatewayType(node.bpmn?.type)) {
-        // For gateways (diamonds), position the label above the shape (bpmn-js default behavior)
-        const labelWidth = label?.width ?? 100;
-        // Calculate label height based on text content (may need multiple lines)
-        // Use bpmn.name as the display text since that's what bpmn-js renders
-        const labelText = node.bpmn?.name ?? label?.text ?? '';
-        const estimatedLines = this.estimateLabelLines(labelText, labelWidth);
-        const labelHeight = estimatedLines * 14; // 14px per line
+      // Position label below the event circle, horizontally centered (using absolute coords)
+      shape.label = {
+        bounds: {
+          x: absoluteX + (nodeWidth - labelWidth) / 2,
+          y: absoluteY + nodeHeight + 4, // 4px gap below the circle
+          width: labelWidth,
+          height: labelHeight,
+        },
+      };
+    } else if (this.isGatewayType(node.bpmn?.type) && labelText) {
+      // For gateways (diamonds), position the label above the shape to avoid overlap with nodes below
+      const labelWidth = label?.width ?? 100;
+      // Calculate label height based on text content (may need multiple lines)
+      const estimatedLines = this.estimateLabelLines(labelText, labelWidth);
+      const labelHeight = estimatedLines * 14; // 14px per line
 
-        // Position label above the gateway diamond, horizontally centered
-        // Adjust Y position upward based on label height
-        shape.label = {
-          bounds: {
-            x: absoluteX + (nodeWidth - labelWidth) / 2,
-            y: absoluteY - labelHeight - 4, // 4px gap above the diamond
-            width: labelWidth,
-            height: labelHeight,
-          },
-        };
-      } else if (label?.x !== undefined && label?.y !== undefined) {
-        // For other elements, use ELK-calculated position (relative to node, converted to absolute)
-        shape.label = {
-          bounds: {
-            x: absoluteX + label.x,
-            y: absoluteY + label.y,
-            width: label?.width ?? 100,
-            height: label?.height ?? 20,
-          },
-        };
-      }
+      // Position label above the gateway diamond, horizontally centered
+      // Adjust Y position upward based on label height
+      shape.label = {
+        bounds: {
+          x: absoluteX + (nodeWidth - labelWidth) / 2,
+          y: absoluteY - labelHeight - 4, // 4px gap above the diamond
+          width: labelWidth,
+          height: labelHeight,
+        },
+      };
+    } else if (label?.x !== undefined && label?.y !== undefined) {
+      // For other elements with explicit label positioning, use ELK-calculated position
+      shape.label = {
+        bounds: {
+          x: absoluteX + label.x,
+          y: absoluteY + label.y,
+          width: label?.width ?? 100,
+          height: label?.height ?? 20,
+        },
+      };
     }
 
     return shape;

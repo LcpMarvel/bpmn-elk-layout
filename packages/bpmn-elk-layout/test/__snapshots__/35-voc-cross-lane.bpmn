@@ -93,6 +93,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="start_event_di" bpmnElement="start_event">
         <dc:Bounds x="125" y="82" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="93" y="122" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_create_form_di" bpmnElement="task_create_form">
         <dc:Bounds x="181" y="60" width="100" height="80" />
@@ -111,6 +114,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="gateway_fast_path_di" bpmnElement="gateway_fast_path">
         <dc:Bounds x="781" y="75" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="756" y="57" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="lane_management_di" bpmnElement="lane_management" isHorizontal="true">
         <dc:Bounds x="30" y="200" width="1162" height="200" />
@@ -129,9 +135,15 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_fast_di" bpmnElement="end_fast">
         <dc:Bounds x="1091" y="708" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1059" y="748" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_normal_di" bpmnElement="end_normal">
         <dc:Bounds x="1091" y="652" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1059" y="692" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
         <di:waypoint x="161" y="100" />

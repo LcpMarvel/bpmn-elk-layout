@@ -365,20 +365,64 @@ export class LaneArranger {
         const waypoints: Point[] = [];
         waypoints.push({ x: startX, y: startY });
 
+        // Check if there are obstacles in the direct path (even for same Y level)
+        const obstaclesInPath = this.getObstaclesInPath(
+          startX,
+          startY,
+          endX,
+          endY,
+          sourceId,
+          targetId,
+          nodePositions
+        );
+
         // Add bend points for orthogonal routing if source and target are in different lanes
-        if (Math.abs(startY - endY) > 10) {
-          // Find a clear X position for the vertical segment that avoids obstacles
-          const midX = this.findClearMidX(
-            startX,
-            endX,
-            startY,
-            endY,
-            sourceId,
-            targetId,
-            nodePositions
-          );
-          waypoints.push({ x: midX, y: startY });
-          waypoints.push({ x: midX, y: endY });
+        // OR if there are obstacles in the direct path
+        if (Math.abs(startY - endY) > 10 || obstaclesInPath.length > 0) {
+          // If obstacles are in the way and Y levels are similar, we need to route around them
+          if (obstaclesInPath.length > 0 && Math.abs(startY - endY) <= 10) {
+            // Route around obstacles by going above or below
+            const routePoints = this.routeAroundObstacles(
+              startX,
+              startY,
+              endX,
+              endY,
+              obstaclesInPath,
+              nodePositions
+            );
+            for (const pt of routePoints) {
+              waypoints.push(pt);
+            }
+          } else {
+            // Find a clear X position for the vertical segment that avoids obstacles
+            const midX = this.findClearMidX(
+              startX,
+              endX,
+              startY,
+              endY,
+              sourceId,
+              targetId,
+              nodePositions
+            );
+
+            if (midX !== null) {
+              waypoints.push({ x: midX, y: startY });
+              waypoints.push({ x: midX, y: endY });
+            } else {
+              // No clear midX found - fallback to routing around obstacles
+              const routePoints = this.routeAroundObstacles(
+                startX,
+                startY,
+                endX,
+                endY,
+                obstaclesInPath,
+                nodePositions
+              );
+              for (const pt of routePoints) {
+                waypoints.push(pt);
+              }
+            }
+          }
         }
 
         waypoints.push({ x: endX, y: endY });
@@ -401,11 +445,134 @@ export class LaneArranger {
   }
 
   /**
+   * Get obstacles in the direct path from source to target.
+   * This handles the case where source and target are at similar Y positions
+   * but there are nodes in between.
+   */
+  private getObstaclesInPath(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    sourceId: string | undefined,
+    targetId: string | undefined,
+    nodePositions: Map<string, { x: number; y: number; width: number; height: number }>
+  ): { id: string; x: number; y: number; width: number; height: number }[] {
+    const minX = Math.min(startX, endX);
+    const maxX = Math.max(startX, endX);
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+
+    const obstacles: { id: string; x: number; y: number; width: number; height: number }[] = [];
+
+    // Patterns to identify flow nodes (actual obstacles) vs containers (lanes)
+    const flowNodePatterns = [
+      /^task_/, /^gateway_/, /^start_/, /^end_/,
+      /^subprocess_/, /^call_/,
+      /^intermediate_/, /^event_/, /^catch_/,
+    ];
+
+    for (const [nodeId, pos] of nodePositions) {
+      if (nodeId === sourceId || nodeId === targetId) continue;
+
+      // Skip lanes - they are containers, not obstacles
+      if (nodeId.startsWith('lane_')) continue;
+
+      // Only consider flow nodes as obstacles
+      const isFlowNode = flowNodePatterns.some(pattern => pattern.test(nodeId));
+      if (!isFlowNode) continue;
+
+      const nodeLeft = pos.x;
+      const nodeRight = pos.x + pos.width;
+      const nodeTop = pos.y;
+      const nodeBottom = pos.y + pos.height;
+
+      // Check if node's bounding box intersects with the line segment's bounding box
+      // For a roughly horizontal line (small Y difference), check if the node is in the way
+      const xOverlap = nodeRight > minX && nodeLeft < maxX;
+
+      // More precise check: does the line segment pass through the node?
+      // For nearly horizontal lines, check if the node's Y range contains the line's Y range
+      if (xOverlap) {
+        // Check if the node's Y range intersects with the line's Y range
+        if (nodeTop <= maxY && nodeBottom >= minY) {
+          if (isDebugEnabled()) {
+            console.log(`[BPMN]   getObstaclesInPath: found obstacle ${nodeId} at x=[${nodeLeft}, ${nodeRight}], y=[${nodeTop}, ${nodeBottom}]`);
+          }
+          obstacles.push({ id: nodeId, ...pos });
+        }
+      }
+    }
+
+    // Sort obstacles by X position (left to right)
+    obstacles.sort((a, b) => a.x - b.x);
+
+    return obstacles;
+  }
+
+  /**
+   * Route around obstacles when source and target are at similar Y levels.
+   * Decides whether to go above or below based on available space.
+   */
+  private routeAroundObstacles(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    obstacles: { id: string; x: number; y: number; width: number; height: number }[],
+    nodePositions: Map<string, { x: number; y: number; width: number; height: number }>
+  ): Point[] {
+    const margin = 20;
+    const points: Point[] = [];
+
+    // Find the combined bounding box of all obstacles
+    let minObsY = Infinity;
+    let maxObsY = -Infinity;
+    let minObsX = Infinity;
+    let maxObsX = -Infinity;
+
+    for (const obs of obstacles) {
+      minObsY = Math.min(minObsY, obs.y);
+      maxObsY = Math.max(maxObsY, obs.y + obs.height);
+      minObsX = Math.min(minObsX, obs.x);
+      maxObsX = Math.max(maxObsX, obs.x + obs.width);
+    }
+
+    // Check space above and below
+    const spaceAbove = minObsY - margin;
+    const spaceBelow = maxObsY + margin;
+
+    // Decide direction: prefer going above if there's more space or if startY is above obstacle center
+    const obsCenterY = (minObsY + maxObsY) / 2;
+    const goAbove = startY < obsCenterY || spaceAbove > 0;
+
+    const routeY = goAbove ? (minObsY - margin) : (maxObsY + margin);
+
+    if (isDebugEnabled()) {
+      console.log(`[BPMN]   routeAroundObstacles: goAbove=${goAbove}, routeY=${routeY}, minObsX=${minObsX}, maxObsX=${maxObsX}`);
+    }
+
+    // Create the route: go to first obstacle, up/down, horizontal past obstacles, then to target Y
+    // Point 1: Vertical move to route Y level at start X
+    points.push({ x: startX, y: routeY });
+
+    // Point 2: Horizontal move past all obstacles
+    points.push({ x: maxObsX + margin, y: routeY });
+
+    // Point 3: Vertical move back to end Y level
+    points.push({ x: maxObsX + margin, y: endY });
+
+    return points;
+  }
+
+  /**
    * Find a clear X position for vertical edge segment that avoids obstacles.
    * Checks all three segments of the L-shaped path:
    * 1. Horizontal from (startX, startY) to (midX, startY)
    * 2. Vertical from (midX, startY) to (midX, endY)
    * 3. Horizontal from (midX, endY) to (endX, endY)
+   *
+   * Returns null if no valid route can be found (caller should use routeAroundObstacles instead)
    */
   private findClearMidX(
     startX: number,
@@ -415,7 +582,7 @@ export class LaneArranger {
     sourceId: string | undefined,
     targetId: string | undefined,
     nodePositions: Map<string, { x: number; y: number; width: number; height: number }>
-  ): number {
+  ): number | null {
     const margin = 15; // Margin to keep from node edges
     const minY = Math.min(startY, endY);
     const maxY = Math.max(startY, endY);
@@ -426,10 +593,24 @@ export class LaneArranger {
       console.log(`[BPMN]   findClearMidX: startX=${startX}, endX=${endX}, startY=${startY}, endY=${endY}`);
     }
 
+    // Patterns to identify flow nodes (actual obstacles) vs containers (lanes)
+    const flowNodePatterns = [
+      /^task_/, /^gateway_/, /^start_/, /^end_/,
+      /^subprocess_/, /^call_/,
+      /^intermediate_/, /^event_/, /^catch_/,
+    ];
+
     // Collect all obstacles that could affect any segment of the path
     const allObstacles: { x: number; y: number; width: number; height: number; right: number; bottom: number; id: string }[] = [];
     for (const [nodeId, pos] of nodePositions) {
       if (nodeId === sourceId || nodeId === targetId) continue;
+
+      // Skip lanes - they are containers, not obstacles
+      if (nodeId.startsWith('lane_')) continue;
+
+      // Only consider flow nodes as obstacles
+      const isFlowNode = flowNodePatterns.some(pattern => pattern.test(nodeId));
+      if (!isFlowNode) continue;
 
       const nodeLeft = pos.x;
       const nodeRight = pos.x + pos.width;
@@ -546,10 +727,10 @@ export class LaneArranger {
       return rightMost;
     }
 
-    // Fallback: use simple midpoint (edge may cross, but we tried our best)
+    // No valid route found - return null so caller can use routeAroundObstacles
     if (isDebugEnabled()) {
-      console.log(`[BPMN]   findClearMidX: no valid route found, using midpoint ${simpleMidX}`);
+      console.log(`[BPMN]   findClearMidX: no valid route found, returning null`);
     }
-    return simpleMidX;
+    return null;
   }
 }

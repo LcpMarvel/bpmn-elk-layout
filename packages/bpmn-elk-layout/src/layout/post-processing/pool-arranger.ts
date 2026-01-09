@@ -9,7 +9,7 @@ import type { ElkBpmnGraph } from '../../types';
 import type { NodeWithBpmn, Point, Bounds, ArtifactInfo } from '../../types/internal';
 import { ARTIFACT_TYPES } from './artifact-positioner';
 import { ConstraintSolver } from '../constraint';
-import { isDebugEnabled, DEBUG } from '../../utils/debug';
+import { isDebugEnabled } from '../../utils/debug';
 
 /**
  * Handler for pool arrangement

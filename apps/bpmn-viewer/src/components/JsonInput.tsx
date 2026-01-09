@@ -30,10 +30,29 @@ export function JsonInput({ onXmlChange, onError, onLoadingChange }: JsonInputPr
       // Parse JSON
       const elkBpmnJson = JSON.parse(value);
 
+      // Validate input
+      if (!elkBpmnJson || typeof elkBpmnJson !== 'object') {
+        onError('Invalid ELK-BPMN JSON: must be an object');
+        return;
+      }
+
+      if (!elkBpmnJson.children || !Array.isArray(elkBpmnJson.children)) {
+        onError('Invalid ELK-BPMN JSON: missing "children" array');
+        return;
+      }
+
+      if (elkBpmnJson.children.length === 0) {
+        onError('Invalid ELK-BPMN JSON: "children" array is empty. Must contain at least one process or collaboration.');
+        return;
+      }
+
+      console.log('Input JSON:', elkBpmnJson);
+
       // Convert using bpmn-elk-layout
       const converter = new BpmnElkLayout();
       const bpmnXml = await converter.to_bpmn(elkBpmnJson);
 
+      console.log('Generated BPMN XML:', bpmnXml);
       onXmlChange(bpmnXml);
     } catch (err: any) {
       console.error('Conversion failed:', err);
