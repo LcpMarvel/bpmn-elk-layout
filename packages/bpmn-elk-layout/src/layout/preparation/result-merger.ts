@@ -49,12 +49,22 @@ export class ResultMerger {
    * Merge a single node's layout results with original BPMN data
    */
   private mergeNodeResults(original: NodeWithBpmn, layouted: ElkNode): NodeWithBpmn {
+    // Get _visualHeight from layouted node's bpmn if available
+    const layoutedBpmn = (layouted as ElkNode & { bpmn?: NodeWithBpmn['bpmn'] }).bpmn;
+    const visualHeight = (layoutedBpmn as { _visualHeight?: number } | undefined)?._visualHeight;
+
+    // Merge bpmn with _visualHeight if present
+    const mergedBpmn = visualHeight !== undefined
+      ? { ...original.bpmn, _visualHeight: visualHeight }
+      : original.bpmn;
+
     const result: NodeWithBpmn = {
       ...original,
       x: layouted.x ?? 0,
       y: layouted.y ?? 0,
       width: layouted.width ?? original.width,
       height: layouted.height ?? original.height,
+      bpmn: mergedBpmn,
     };
 
     // Merge children

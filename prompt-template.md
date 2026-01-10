@@ -122,19 +122,58 @@ eventDefinitionType 可选值：`none`, `message`, `error`, `escalation`, `cance
 
 type 可选值：`task`, `userTask`, `serviceTask`, `scriptTask`, `businessRuleTask`, `sendTask`, `receiveTask`, `manualTask`
 
-**带文档说明的任务**（用于记录输入/输出信息）：
+**带输入输出规范的任务（ioSpecification）**：
+
+任务可以通过 `ioSpecification` 定义输入和输出数据，这些数据会在图表中以数据对象图标的形式显示在任务下方，并用虚线关联线连接到任务。
+
 ```json
 {
-  "id": "task_1",
+  "id": "task_create_event",
   "width": 100,
   "height": 80,
   "bpmn": {
     "type": "userTask",
-    "name": "1. 审批申请",
-    "documentation": "输入：待审批的申请表\n输出：审批结果（通过/拒绝）"
+    "name": "创建事件",
+    "ioSpecification": {
+      "dataInputs": [
+        { "id": "input_feedback", "name": "反馈信息" }
+      ],
+      "dataOutputs": [
+        { "id": "output_form", "name": "事件表单" }
+      ]
+    }
   }
 }
 ```
+
+**多个输入输出**：
+```json
+{
+  "id": "task_process",
+  "width": 100,
+  "height": 80,
+  "bpmn": {
+    "type": "serviceTask",
+    "name": "处理数据",
+    "ioSpecification": {
+      "dataInputs": [
+        { "id": "input_1", "name": "原始数据" },
+        { "id": "input_2", "name": "配置参数" }
+      ],
+      "dataOutputs": [
+        { "id": "output_1", "name": "处理结果" },
+        { "id": "output_2", "name": "处理日志" }
+      ]
+    }
+  }
+}
+```
+
+⚠️ **注意**：
+- `ioSpecification` 定义的是任务本地的输入/输出，在图表中会自动显示为附着在任务下方的数据对象图标
+- 输入数据显示在任务左下方，输出数据显示在任务右下方
+- 每个 dataInput/dataOutput 需要唯一的 `id` 和可选的 `name`（用于显示标签）
+- 这与流程级别的 dataObjectReference（独立的数据对象）不同，ioSpecification 是任务专属的
 
 ### 网关
 

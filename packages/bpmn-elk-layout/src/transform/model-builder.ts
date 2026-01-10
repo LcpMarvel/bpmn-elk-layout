@@ -30,7 +30,9 @@ import type {
   BoundaryEventNode,
   EdgeNode,
   ArtifactNode,
+  IoSpecificationModel,
 } from './model-types';
+import type { IoSpecification } from '../types/elk-bpmn';
 
 // Re-export types for external consumers
 export type {
@@ -52,6 +54,11 @@ export type {
   SequenceFlowModel,
   DataAssociationModel,
   RootElement,
+  IoSpecificationModel,
+  DataInputModel,
+  DataOutputModel,
+  InputSetModel,
+  OutputSetModel,
 } from './model-types';
 
 // ============================================================================
@@ -295,13 +302,99 @@ export class ModelBuilder {
     const incoming = this.refResolver.getIncomingSequenceFlows(node.id);
     const outgoing = this.refResolver.getOutgoingSequenceFlows(node.id);
 
-    return {
+    const flowElement: FlowElementModel = {
       type: node.bpmn?.type ?? 'task',
       id: node.id,
       name: node.bpmn?.name,
       incoming,
       outgoing,
       properties: this.extractProperties(node.bpmn ?? {}),
+    };
+
+    // Extract ioSpecification if present (for tasks)
+    const ioSpec = (node.bpmn as { ioSpecification?: IoSpecification } | undefined)?.ioSpecification;
+    if (ioSpec) {
+      flowElement.ioSpecification = this.buildIoSpecification(ioSpec, node.id);
+
+      // Auto-generate dataInputAssociation for only the first dataInput
+      // Only the topmost input in the vertical stack gets a dashed line to the task
+      const dataInputs = ioSpec.dataInputs ?? [];
+      if (dataInputs.length > 0) {
+        const firstInput = dataInputs[0];
+        flowElement.dataInputAssociations = [{
+          id: `${firstInput.id ?? `${node.id}_input_0`}_assoc`,
+          sourceRef: firstInput.id ?? `${node.id}_input_0`,
+          targetRef: node.id,
+        }];
+      }
+
+      // Auto-generate dataOutputAssociation for only the first dataOutput
+      // Only the topmost output in the vertical stack gets a dashed line from the task
+      const dataOutputs = ioSpec.dataOutputs ?? [];
+      if (dataOutputs.length > 0) {
+        const firstOutput = dataOutputs[0];
+        flowElement.dataOutputAssociations = [{
+          id: `${firstOutput.id ?? `${node.id}_output_0`}_assoc`,
+          sourceRef: node.id,
+          targetRef: firstOutput.id ?? `${node.id}_output_0`,
+        }];
+      }
+    }
+
+    return flowElement;
+  }
+
+  /**
+   * Build ioSpecification model from input
+   */
+  private buildIoSpecification(ioSpec: IoSpecification, taskId: string): IoSpecificationModel {
+    const dataInputs = (ioSpec.dataInputs ?? []).map((di, index) => ({
+      id: di.id ?? `${taskId}_input_${index}`,
+      name: di.name,
+      itemSubjectRef: di.itemSubjectRef,
+      isCollection: di.isCollection,
+    }));
+
+    const dataOutputs = (ioSpec.dataOutputs ?? []).map((dout, index) => ({
+      id: dout.id ?? `${taskId}_output_${index}`,
+      name: dout.name,
+      itemSubjectRef: dout.itemSubjectRef,
+      isCollection: dout.isCollection,
+    }));
+
+    // Build inputSets - if not provided, create default one with all inputs
+    const inputSets = (ioSpec.inputSets ?? []).map((is, index) => ({
+      id: is.id ?? `${taskId}_inputSet_${index}`,
+      name: is.name,
+      dataInputRefs: is.dataInputRefs ?? [],
+    }));
+    if (inputSets.length === 0 && dataInputs.length > 0) {
+      inputSets.push({
+        id: `${taskId}_inputSet_0`,
+        name: undefined,
+        dataInputRefs: dataInputs.map(di => di.id),
+      });
+    }
+
+    // Build outputSets - if not provided, create default one with all outputs
+    const outputSets = (ioSpec.outputSets ?? []).map((os, index) => ({
+      id: os.id ?? `${taskId}_outputSet_${index}`,
+      name: os.name,
+      dataOutputRefs: os.dataOutputRefs ?? [],
+    }));
+    if (outputSets.length === 0 && dataOutputs.length > 0) {
+      outputSets.push({
+        id: `${taskId}_outputSet_0`,
+        name: undefined,
+        dataOutputRefs: dataOutputs.map(dout => dout.id),
+      });
+    }
+
+    return {
+      dataInputs,
+      dataOutputs,
+      inputSets,
+      outputSets,
     };
   }
 

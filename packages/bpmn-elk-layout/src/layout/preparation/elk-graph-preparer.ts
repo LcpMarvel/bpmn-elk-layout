@@ -282,6 +282,32 @@ export class ElkGraphPreparer {
       } as LayoutOptions;
     }
 
+    // Calculate extra height for nodes with ioSpecification to reserve space for data objects
+    // These constants must match the values in diagram-builder.ts buildIoSpecificationShapes()
+    const ioSpec = node.bpmn?.ioSpecification;
+    let ioSpecExtraHeight = 0;
+    if (ioSpec) {
+      const dataInputs = ioSpec.dataInputs ?? [];
+      const dataOutputs = ioSpec.dataOutputs ?? [];
+      const maxCount = Math.max(dataInputs.length, dataOutputs.length);
+
+      if (maxCount > 0) {
+        // Constants matching diagram-builder.ts
+        const dataHeight = 50;
+        const gapBelow = 20;
+        const verticalSpacing = 24;
+        const labelHeight = 14;
+
+        // Calculate required extra height for ELK layout:
+        // gapBelow + maxCount * (dataHeight + verticalSpacing) + labelHeight
+        ioSpecExtraHeight = gapBelow + maxCount * (dataHeight + verticalSpacing) + labelHeight;
+
+        if (isDebugEnabled()) {
+          console.log(`[BPMN] Adding extra height ${ioSpecExtraHeight} for node ${node.id} with ioSpecification`);
+        }
+      }
+    }
+
     // Give main flow nodes higher priority so ELK keeps them aligned
     if (mainFlowNodes.has(node.id) && !boundaryEventTargetIds.has(node.id)) {
       layoutOptions = {
@@ -407,12 +433,20 @@ export class ElkGraphPreparer {
       } as LayoutOptions;
     }
 
+    // For nodes with ioSpecification, increase height for ELK layout to reserve space
+    // Store original height in bpmn metadata for rendering
+    const originalHeight = node.height ?? 80;
+    const elkHeight = originalHeight + ioSpecExtraHeight;
+    const bpmnWithVisualHeight = ioSpecExtraHeight > 0
+      ? { ...node.bpmn, _visualHeight: originalHeight }
+      : node.bpmn;
+
     const elkNode: ElkNode & { bpmn?: NodeWithBpmn['bpmn'] } = {
       id: node.id,
       width: node.width,
-      height: node.height,
+      height: elkHeight,
       layoutOptions,
-      bpmn: node.bpmn,
+      bpmn: bpmnWithVisualHeight,
     };
 
     // Process children (including boundary events as siblings)

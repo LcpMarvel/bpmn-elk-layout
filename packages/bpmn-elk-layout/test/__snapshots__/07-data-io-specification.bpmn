@@ -1,229 +1,245 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_data_io_specification" targetNamespace="http://example.com/test-data-io" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
-  <bpmn:process id="process_data_io" name="数据IO规范测试" isExecutable="true">
+  <bpmn:process id="process_data_io" name="任务IO规范测试" isExecutable="true">
     <bpmn:startEvent id="start_1" name="开始">
       <bpmn:outgoing>flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:dataObjectReference id="data_input_order" name="订单数据" />
-    <bpmn:dataObjectReference id="data_input_customer" name="客户信息" />
-    <bpmn:serviceTask id="task_validate" name="验证数据">
+    <bpmn:userTask id="task_create_event" name="创建事件">
       <bpmn:incoming>flow_1</bpmn:incoming>
       <bpmn:outgoing>flow_2</bpmn:outgoing>
-      <bpmn:dataInputAssociation id="data_assoc_order_to_validate">
-        <bpmn:sourceRef>data_input_order</bpmn:sourceRef>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="input_feedback" name="反馈信息" />
+        <bpmn:dataOutput id="output_form" name="事件表单" />
+        <bpmn:inputSet id="task_create_event_inputSet_0">
+          <bpmn:dataInputRefs>input_feedback</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="task_create_event_outputSet_0">
+          <bpmn:dataOutputRefs>output_form</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="input_feedback_assoc">
+        <bpmn:sourceRef>input_feedback</bpmn:sourceRef>
       </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="data_assoc_validate_to_result">
-        <bpmn:targetRef>data_validation_result</bpmn:targetRef>
+      <bpmn:dataOutputAssociation id="output_form_assoc">
+        <bpmn:targetRef>output_form</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-    </bpmn:serviceTask>
-    <bpmn:dataObjectReference id="data_validation_result" name="验证结果" />
-    <bpmn:serviceTask id="task_process" name="处理订单">
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gateway_complete" name="信息是否完整" gatewayDirection="Diverging">
       <bpmn:incoming>flow_2</bpmn:incoming>
-      <bpmn:outgoing>flow_3</bpmn:outgoing>
-      <bpmn:dataInputAssociation id="data_assoc_customer_to_process">
-        <bpmn:sourceRef>data_input_customer</bpmn:sourceRef>
-      </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="data_assoc_result_to_process">
-        <bpmn:sourceRef>data_validation_result</bpmn:sourceRef>
-      </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="data_assoc_process_to_order">
-        <bpmn:targetRef>data_processed_order</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="data_assoc_process_to_store">
-        <bpmn:targetRef>data_store_orders</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
-    </bpmn:serviceTask>
-    <bpmn:dataObjectReference id="data_processed_order" name="已处理订单" />
-    <bpmn:serviceTask id="task_generate_report" name="生成报告">
-      <bpmn:incoming>flow_3</bpmn:incoming>
+      <bpmn:outgoing>flow_3_no</bpmn:outgoing>
+      <bpmn:outgoing>flow_5_yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="task_supplement" name="补充信息">
+      <bpmn:incoming>flow_3_no</bpmn:incoming>
       <bpmn:outgoing>flow_4</bpmn:outgoing>
-      <bpmn:dataInputAssociation id="data_assoc_order_to_report">
-        <bpmn:sourceRef>data_processed_order</bpmn:sourceRef>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="input_original" name="原始表单" />
+        <bpmn:dataInput id="input_extra" name="补充资料" />
+        <bpmn:dataOutput id="output_updated" name="更新表单" />
+        <bpmn:inputSet id="task_supplement_inputSet_0">
+          <bpmn:dataInputRefs>input_original</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>input_extra</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="task_supplement_outputSet_0">
+          <bpmn:dataOutputRefs>output_updated</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="input_original_assoc">
+        <bpmn:sourceRef>input_original</bpmn:sourceRef>
       </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="data_assoc_report_to_output">
-        <bpmn:targetRef>data_output_report</bpmn:targetRef>
+      <bpmn:dataOutputAssociation id="output_updated_assoc">
+        <bpmn:targetRef>output_updated</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="task_process" name="处理事件">
+      <bpmn:incoming>flow_4</bpmn:incoming>
+      <bpmn:incoming>flow_5_yes</bpmn:incoming>
+      <bpmn:outgoing>flow_6</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="input_event_form" name="事件表单" />
+        <bpmn:dataOutput id="output_result" name="处理结果" />
+        <bpmn:dataOutput id="output_log" name="处理日志" />
+        <bpmn:inputSet id="task_process_inputSet_0">
+          <bpmn:dataInputRefs>input_event_form</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="task_process_outputSet_0">
+          <bpmn:dataOutputRefs>output_result</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>output_log</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="input_event_form_assoc">
+        <bpmn:sourceRef>input_event_form</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="output_result_assoc">
+        <bpmn:targetRef>output_result</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:serviceTask>
-    <bpmn:dataStoreReference id="data_store_orders" name="订单数据库" />
-    <bpmn:dataObjectReference id="data_output_report" name="处理报告" />
-    <bpmn:sendTask id="task_notify" name="发送通知">
-      <bpmn:incoming>flow_4</bpmn:incoming>
-      <bpmn:outgoing>flow_5</bpmn:outgoing>
-      <bpmn:dataInputAssociation id="data_assoc_report_to_notify">
-        <bpmn:sourceRef>data_output_report</bpmn:sourceRef>
-      </bpmn:dataInputAssociation>
-    </bpmn:sendTask>
     <bpmn:endEvent id="end_1" name="结束">
-      <bpmn:incoming>flow_5</bpmn:incoming>
+      <bpmn:incoming>flow_6</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="flow_1" sourceRef="start_1" targetRef="task_validate" />
-    <bpmn:sequenceFlow id="flow_2" sourceRef="task_validate" targetRef="task_process" />
-    <bpmn:sequenceFlow id="flow_3" sourceRef="task_process" targetRef="task_generate_report" />
-    <bpmn:sequenceFlow id="flow_4" sourceRef="task_generate_report" targetRef="task_notify" />
-    <bpmn:sequenceFlow id="flow_5" sourceRef="task_notify" targetRef="end_1" />
+    <bpmn:sequenceFlow id="flow_1" sourceRef="start_1" targetRef="task_create_event" />
+    <bpmn:sequenceFlow id="flow_2" sourceRef="task_create_event" targetRef="gateway_complete" />
+    <bpmn:sequenceFlow id="flow_3_no" name="否" sourceRef="gateway_complete" targetRef="task_supplement" />
+    <bpmn:sequenceFlow id="flow_4" sourceRef="task_supplement" targetRef="task_process" />
+    <bpmn:sequenceFlow id="flow_5_yes" name="是" sourceRef="gateway_complete" targetRef="task_process" />
+    <bpmn:sequenceFlow id="flow_6" sourceRef="task_process" targetRef="end_1" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_data_io_specification" name="BPMNDiagram">
     <bpmndi:BPMNPlane id="BPMNPlane_definitions_data_io_specification" bpmnElement="process_data_io">
       <bpmndi:BPMNShape id="process_data_io_di" bpmnElement="process_data_io">
-        <dc:Bounds x="12" y="12" width="868" height="171.66666666666669" />
+        <dc:Bounds x="12" y="12" width="650" height="329.66666666666663" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="start_1_di" bpmnElement="start_1">
-        <dc:Bounds x="12" y="98.66666666666667" width="36" height="36" />
+        <dc:Bounds x="12" y="160.33333333333331" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="15" y="138.66666666666669" width="30" height="14" />
+          <dc:Bounds x="15" y="200.33333333333331" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_input_order_di" bpmnElement="data_input_order">
-        <dc:Bounds x="88" y="-43" width="36" height="50" />
+      <bpmndi:BPMNShape id="task_create_event_di" bpmnElement="task_create_event">
+        <dc:Bounds x="68" y="84.33333333333331" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="-43" width="56" height="14" />
+          <dc:Bounds x="68" y="84.33333333333331" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_input_customer_di" bpmnElement="data_input_customer">
-        <dc:Bounds x="294" y="-36.33333333333333" width="36" height="50" />
+      <bpmndi:BPMNShape id="input_feedback_di" bpmnElement="input_feedback">
+        <dc:Bounds x="68" y="184.33333333333331" width="36" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="294" y="-36.33333333333333" width="56" height="14" />
+          <dc:Bounds x="58" y="238.33333333333331" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_validate_di" bpmnElement="task_validate">
-        <dc:Bounds x="88" y="27" width="100" height="80" />
+      <bpmndi:BPMNShape id="output_form_di" bpmnElement="output_form">
+        <dc:Bounds x="132" y="184.33333333333331" width="36" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="88" y="27" width="56" height="14" />
+          <dc:Bounds x="122" y="238.33333333333331" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_validation_result_di" bpmnElement="data_validation_result">
-        <dc:Bounds x="345" y="-36.33333333333333" width="36" height="50" />
+      <bpmndi:BPMNShape id="gateway_complete_di" bpmnElement="gateway_complete">
+        <dc:Bounds x="188" y="153.33333333333331" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="345" y="-36.33333333333333" width="56" height="14" />
+          <dc:Bounds x="171" y="135.33333333333331" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_supplement_di" bpmnElement="task_supplement">
+        <dc:Bounds x="362" y="55.66666666666666" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="362" y="55.66666666666666" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="input_original_di" bpmnElement="input_original">
+        <dc:Bounds x="362" y="155.66666666666666" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="352" y="209.66666666666666" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="input_extra_di" bpmnElement="input_extra">
+        <dc:Bounds x="362" y="229.66666666666666" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="352" y="283.66666666666663" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="output_updated_di" bpmnElement="output_updated">
+        <dc:Bounds x="426" y="155.66666666666666" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="416" y="209.66666666666666" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="task_process_di" bpmnElement="task_process">
-        <dc:Bounds x="294" y="33.66666666666667" width="100" height="80" />
+        <dc:Bounds x="482" y="12" width="100" height="80" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="294" y="33.66666666666667" width="56" height="14" />
+          <dc:Bounds x="482" y="12" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_processed_order_di" bpmnElement="data_processed_order">
-        <dc:Bounds x="504" y="-58" width="36" height="50" />
+      <bpmndi:BPMNShape id="input_event_form_di" bpmnElement="input_event_form">
+        <dc:Bounds x="482" y="112" width="36" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="504" y="-58" width="70" height="14" />
+          <dc:Bounds x="472" y="166" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_generate_report_di" bpmnElement="task_generate_report">
-        <dc:Bounds x="504" y="12" width="100" height="80" />
+      <bpmndi:BPMNShape id="output_result_di" bpmnElement="output_result">
+        <dc:Bounds x="546" y="112" width="36" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="504" y="12" width="56" height="14" />
+          <dc:Bounds x="536" y="166" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_store_orders_di" bpmnElement="data_store_orders">
-        <dc:Bounds x="409" y="-36.33333333333333" width="50" height="50" />
+      <bpmndi:BPMNShape id="output_log_di" bpmnElement="output_log">
+        <dc:Bounds x="546" y="186" width="36" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="409" y="-36.33333333333333" width="70" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="data_output_report_di" bpmnElement="data_output_report">
-        <dc:Bounds x="700" y="-58" width="36" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="700" y="-58" width="56" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="task_notify_di" bpmnElement="task_notify">
-        <dc:Bounds x="700" y="12" width="100" height="80" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="700" y="12" width="56" height="14" />
+          <dc:Bounds x="536" y="240" width="56" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="end_1_di" bpmnElement="end_1">
-        <dc:Bounds x="820" y="34" width="36" height="36" />
+        <dc:Bounds x="602" y="125" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="823" y="74" width="30" height="14" />
+          <dc:Bounds x="605" y="165" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="input_feedback_assoc_di" bpmnElement="input_feedback_assoc">
+        <di:waypoint x="86" y="184.33333333333331" />
+        <di:waypoint x="86" y="164.33333333333331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="output_form_assoc_di" bpmnElement="output_form_assoc">
+        <di:waypoint x="150" y="164.33333333333331" />
+        <di:waypoint x="150" y="184.33333333333331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="input_original_assoc_di" bpmnElement="input_original_assoc">
+        <di:waypoint x="380" y="155.66666666666666" />
+        <di:waypoint x="380" y="135.66666666666666" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="output_updated_assoc_di" bpmnElement="output_updated_assoc">
+        <di:waypoint x="444" y="135.66666666666666" />
+        <di:waypoint x="444" y="155.66666666666666" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="input_event_form_assoc_di" bpmnElement="input_event_form_assoc">
+        <di:waypoint x="500" y="112" />
+        <di:waypoint x="500" y="92" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="output_result_assoc_di" bpmnElement="output_result_assoc">
+        <di:waypoint x="564" y="92" />
+        <di:waypoint x="564" y="112" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
-        <di:waypoint x="48" y="116.66666666666667" />
-        <di:waypoint x="78" y="116.66666666666667" />
-        <di:waypoint x="78" y="80.33333333333334" />
-        <di:waypoint x="88" y="80.33333333333334" />
+        <di:waypoint x="48" y="178.33333333333331" />
+        <di:waypoint x="53" y="178.33333333333331" />
+        <di:waypoint x="53" y="124.33333333333331" />
+        <di:waypoint x="68" y="124.33333333333331" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_2_di" bpmnElement="flow_2">
-        <di:waypoint x="188" y="80.33333333333334" />
-        <di:waypoint x="198" y="80.33333333333334" />
-        <di:waypoint x="198" y="158.66666666666669" />
-        <di:waypoint x="284" y="158.66666666666669" />
-        <di:waypoint x="284" y="93.66666666666667" />
-        <di:waypoint x="294" y="93.66666666666667" />
+        <di:waypoint x="168" y="124.33333333333331" />
+        <di:waypoint x="173" y="124.33333333333331" />
+        <di:waypoint x="173" y="178.33333333333331" />
+        <di:waypoint x="188" y="178.33333333333331" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_3_di" bpmnElement="flow_3">
-        <di:waypoint x="394" y="73.66666666666667" />
-        <di:waypoint x="494" y="73.66666666666667" />
-        <di:waypoint x="494" y="65.33333333333334" />
-        <di:waypoint x="504" y="65.33333333333334" />
+      <bpmndi:BPMNEdge id="flow_3_no_di" bpmnElement="flow_3_no">
+        <di:waypoint x="229.66666666666666" y="186.66666666666666" />
+        <di:waypoint x="347" y="186.66666666666666" />
+        <di:waypoint x="347" y="95.66666666666666" />
+        <di:waypoint x="362" y="95.66666666666666" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="263.3333333333333" y="191.66666666666666" width="50" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_4_di" bpmnElement="flow_4">
-        <di:waypoint x="604" y="65.33333333333334" />
-        <di:waypoint x="614" y="65.33333333333334" />
-        <di:waypoint x="614" y="73.66666666666667" />
-        <di:waypoint x="690" y="73.66666666666667" />
-        <di:waypoint x="690" y="65.33333333333334" />
-        <di:waypoint x="700" y="65.33333333333334" />
+        <di:waypoint x="462" y="95.66666666666666" />
+        <di:waypoint x="467" y="95.66666666666666" />
+        <di:waypoint x="467" y="52" />
+        <di:waypoint x="482" y="52" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow_5_di" bpmnElement="flow_5">
-        <di:waypoint x="800" y="52" />
-        <di:waypoint x="820" y="52" />
+      <bpmndi:BPMNEdge id="flow_5_yes_di" bpmnElement="flow_5_yes">
+        <di:waypoint x="229.66666666666666" y="169.99999999999997" />
+        <di:waypoint x="282" y="169.99999999999997" />
+        <di:waypoint x="282" y="44.66666666666666" />
+        <di:waypoint x="472" y="44.66666666666666" />
+        <di:waypoint x="472" y="52" />
+        <di:waypoint x="482" y="52" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="352" y="49.66666666666666" width="50" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_order_to_validate_di" bpmnElement="data_assoc_order_to_validate">
-        <di:waypoint x="106" y="7" />
-        <di:waypoint x="106" y="17" />
-        <di:waypoint x="138" y="17" />
-        <di:waypoint x="138" y="27" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_customer_to_process_di" bpmnElement="data_assoc_customer_to_process">
-        <di:waypoint x="312" y="13.666666666666671" />
-        <di:waypoint x="312" y="23.66666666666667" />
-        <di:waypoint x="344" y="23.66666666666667" />
-        <di:waypoint x="344" y="33.66666666666667" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_validate_to_result_di" bpmnElement="data_assoc_validate_to_result">
-        <di:waypoint x="138" y="27" />
-        <di:waypoint x="138" y="20.333333333333336" />
-        <di:waypoint x="363" y="20.333333333333336" />
-        <di:waypoint x="363" y="13.666666666666671" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_result_to_process_di" bpmnElement="data_assoc_result_to_process">
-        <di:waypoint x="363" y="13.666666666666671" />
-        <di:waypoint x="363" y="23.66666666666667" />
-        <di:waypoint x="344" y="23.66666666666667" />
-        <di:waypoint x="344" y="33.66666666666667" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_process_to_order_di" bpmnElement="data_assoc_process_to_order">
-        <di:waypoint x="344" y="33.66666666666667" />
-        <di:waypoint x="344" y="12.833333333333336" />
-        <di:waypoint x="522" y="12.833333333333336" />
-        <di:waypoint x="522" y="-8" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_order_to_report_di" bpmnElement="data_assoc_order_to_report">
-        <di:waypoint x="522" y="-8" />
-        <di:waypoint x="522" y="2" />
-        <di:waypoint x="554" y="2" />
-        <di:waypoint x="554" y="12" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_process_to_store_di" bpmnElement="data_assoc_process_to_store">
-        <di:waypoint x="344" y="33.66666666666667" />
-        <di:waypoint x="344" y="23.66666666666667" />
-        <di:waypoint x="434" y="23.66666666666667" />
-        <di:waypoint x="434" y="13.666666666666671" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_report_to_output_di" bpmnElement="data_assoc_report_to_output">
-        <di:waypoint x="554" y="12" />
-        <di:waypoint x="554" y="2" />
-        <di:waypoint x="718" y="2" />
-        <di:waypoint x="718" y="-8" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="data_assoc_report_to_notify_di" bpmnElement="data_assoc_report_to_notify">
-        <di:waypoint x="718" y="-8" />
-        <di:waypoint x="718" y="2" />
-        <di:waypoint x="750" y="2" />
-        <di:waypoint x="750" y="12" />
+      <bpmndi:BPMNEdge id="flow_6_di" bpmnElement="flow_6">
+        <di:waypoint x="582" y="52" />
+        <di:waypoint x="587" y="52" />
+        <di:waypoint x="587" y="143" />
+        <di:waypoint x="602" y="143" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

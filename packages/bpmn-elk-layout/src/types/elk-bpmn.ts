@@ -441,7 +441,7 @@ export interface Artifact {
 }
 
 export interface DataObjectArtifact {
-  type: 'dataObject' | 'dataObjectReference' | 'dataInput' | 'dataOutput';
+  type: 'dataObject' | 'dataObjectReference';
   name?: string;
   dataObjectRef?: string;
   itemSubjectRef?: string;

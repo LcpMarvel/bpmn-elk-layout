@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_crm_voc" targetNamespace="http://example.com/crm-voc-process" exporter="ELK-BPMN Test Generator" exporterVersion="1.0">
+  <bpmn:collaboration id="collaboration_crm" name="CRM客户VOC处理流程">
+    <bpmn:participant id="pool_crm" name="CRM系统" processRef="process_crm" />
+  </bpmn:collaboration>
+  <bpmn:process id="process_crm" name="CRM系统" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="lane_sales_support" name="销售支持">
+        <bpmn:flowNodeRef>start_voc</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_create_event</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_info_complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_supplement_info</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_split_create_issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_auto_relate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_classify_level</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_approval_confirm</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_sales_director" name="销售主管">
+        <bpmn:flowNodeRef>gateway_review_issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>event_receive_approval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_match_person</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_dispatch_ticket</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gateway_merge_director</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_fast_solution</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="lane_sales_manager" name="销售经理">
+        <bpmn:flowNodeRef>gateway_approve_issue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>event_after_approval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_notify_ceo</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_voc" name="接收到VOC诉求">
+      <bpmn:outgoing>flow_start_to_create</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="task_create_event" name="创建事件">
+      <bpmn:incoming>flow_start_to_create</bpmn:incoming>
+      <bpmn:incoming>flow_review_reject</bpmn:incoming>
+      <bpmn:outgoing>flow_create_to_gateway</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataOutput id="do_feedback_info" name="反馈信息" />
+        <bpmn:dataOutput id="do_event_form_1" name="事件表单" />
+        <bpmn:outputSet id="os_create_event">
+          <bpmn:dataOutputRefs>do_feedback_info</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>do_event_form_1</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="do_feedback_info_assoc">
+        <bpmn:targetRef>do_feedback_info</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gateway_info_complete" name="关键信息是否完整" gatewayDirection="Diverging">
+      <bpmn:incoming>flow_create_to_gateway</bpmn:incoming>
+      <bpmn:incoming>flow_supplement_to_gateway</bpmn:incoming>
+      <bpmn:outgoing>flow_gateway_no</bpmn:outgoing>
+      <bpmn:outgoing>flow_gateway_yes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="task_supplement_info" name="补充事件信息">
+      <bpmn:incoming>flow_gateway_no</bpmn:incoming>
+      <bpmn:outgoing>flow_supplement_to_gateway</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataOutput id="do_supplement_info" name="补充信息" />
+        <bpmn:dataOutput id="do_event_form_2" name="事件表单" />
+        <bpmn:outputSet id="os_supplement">
+          <bpmn:dataOutputRefs>do_supplement_info</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>do_event_form_2</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="do_supplement_info_assoc">
+        <bpmn:targetRef>do_supplement_info</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_split_create_issue" name="拆分事件创建问题工单">
+      <bpmn:incoming>flow_gateway_yes</bpmn:incoming>
+      <bpmn:outgoing>flow_split_to_relate</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="di_event_form" name="事件表单" />
+        <bpmn:dataOutput id="do_issue_ticket_1" name="问题工单" />
+        <bpmn:dataOutput id="do_related_info" name="关联信息" />
+        <bpmn:dataOutput id="do_issue_ticket_2" name="问题工单" />
+        <bpmn:inputSet id="is_split">
+          <bpmn:dataInputRefs>di_event_form</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="os_split">
+          <bpmn:dataOutputRefs>do_issue_ticket_1</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>do_related_info</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>do_issue_ticket_2</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="di_event_form_assoc">
+        <bpmn:sourceRef>di_event_form</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="do_issue_ticket_1_assoc">
+        <bpmn:targetRef>do_issue_ticket_1</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_auto_relate" name="问题工单自动关联相关信息">
+      <bpmn:incoming>flow_split_to_relate</bpmn:incoming>
+      <bpmn:outgoing>flow_relate_to_classify</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_classify_level" name="问题分类定级">
+      <bpmn:incoming>flow_relate_to_classify</bpmn:incoming>
+      <bpmn:outgoing>flow_classify_to_approval</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataOutput id="do_issue_ticket_3" name="问题工单" />
+        <bpmn:dataOutput id="do_initial_conclusion" name="初判结论" />
+        <bpmn:outputSet id="os_classify">
+          <bpmn:dataOutputRefs>do_issue_ticket_3</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>do_initial_conclusion</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="do_issue_ticket_3_assoc">
+        <bpmn:targetRef>do_issue_ticket_3</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="task_approval_confirm" name="审批确认">
+      <bpmn:incoming>flow_classify_to_approval</bpmn:incoming>
+      <bpmn:outgoing>flow_approval_to_review</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gateway_review_issue" name="审核问题工单" gatewayDirection="Diverging">
+      <bpmn:incoming>flow_approval_to_review</bpmn:incoming>
+      <bpmn:incoming>flow_approve_reject</bpmn:incoming>
+      <bpmn:outgoing>flow_review_reject</bpmn:outgoing>
+      <bpmn:outgoing>flow_review_approve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="event_receive_approval" name="收到销售经理批准的信息">
+      <bpmn:incoming>flow_notify_to_receive</bpmn:incoming>
+      <bpmn:outgoing>flow_receive_to_match</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="task_match_person" name="匹配人员">
+      <bpmn:incoming>flow_receive_to_match</bpmn:incoming>
+      <bpmn:outgoing>flow_match_to_dispatch</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="di_skill_matrix" name="技能矩阵" />
+        <bpmn:dataOutput id="do_match_result" name="人员匹配结果" />
+        <bpmn:inputSet id="is_match">
+          <bpmn:dataInputRefs>di_skill_matrix</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="os_match">
+          <bpmn:dataOutputRefs>do_match_result</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="di_skill_matrix_assoc">
+        <bpmn:sourceRef>di_skill_matrix</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="do_match_result_assoc">
+        <bpmn:targetRef>do_match_result</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="task_dispatch_ticket" name="分派工单">
+      <bpmn:incoming>flow_match_to_dispatch</bpmn:incoming>
+      <bpmn:outgoing>flow_dispatch_to_merge</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataOutput id="do_dispatch_notice" name="分派通知" />
+        <bpmn:outputSet id="os_dispatch">
+          <bpmn:dataOutputRefs>do_dispatch_notice</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="do_dispatch_notice_assoc">
+        <bpmn:targetRef>do_dispatch_notice</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gateway_merge_director" gatewayDirection="Converging">
+      <bpmn:incoming>flow_dispatch_to_merge</bpmn:incoming>
+      <bpmn:outgoing>flow_merge_to_end</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="end_fast_solution" name="执行快速解决方案">
+      <bpmn:incoming>flow_merge_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="gateway_approve_issue" name="审批问题工单" gatewayDirection="Diverging">
+      <bpmn:incoming>flow_review_approve</bpmn:incoming>
+      <bpmn:outgoing>flow_approve_reject</bpmn:outgoing>
+      <bpmn:outgoing>flow_approve_pass</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateThrowEvent id="event_after_approval" name="">
+      <bpmn:incoming>flow_approve_pass</bpmn:incoming>
+      <bpmn:outgoing>flow_after_to_notify</bpmn:outgoing>
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sendTask id="task_notify_ceo" name="重要紧急问题抄送品管和CEO">
+      <bpmn:incoming>flow_after_to_notify</bpmn:incoming>
+      <bpmn:outgoing>flow_notify_to_receive</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataOutput id="do_email" name="邮件" />
+        <bpmn:outputSet id="os_notify">
+          <bpmn:dataOutputRefs>do_email</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataOutputAssociation id="do_email_assoc">
+        <bpmn:targetRef>do_email</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="flow_start_to_create" sourceRef="start_voc" targetRef="task_create_event" />
+    <bpmn:sequenceFlow id="flow_create_to_gateway" sourceRef="task_create_event" targetRef="gateway_info_complete" />
+    <bpmn:sequenceFlow id="flow_gateway_no" name="否" sourceRef="gateway_info_complete" targetRef="task_supplement_info" />
+    <bpmn:sequenceFlow id="flow_supplement_to_gateway" sourceRef="task_supplement_info" targetRef="gateway_info_complete" />
+    <bpmn:sequenceFlow id="flow_gateway_yes" name="是" sourceRef="gateway_info_complete" targetRef="task_split_create_issue" />
+    <bpmn:sequenceFlow id="flow_split_to_relate" sourceRef="task_split_create_issue" targetRef="task_auto_relate" />
+    <bpmn:sequenceFlow id="flow_relate_to_classify" sourceRef="task_auto_relate" targetRef="task_classify_level" />
+    <bpmn:sequenceFlow id="flow_classify_to_approval" sourceRef="task_classify_level" targetRef="task_approval_confirm" />
+    <bpmn:sequenceFlow id="flow_approval_to_review" sourceRef="task_approval_confirm" targetRef="gateway_review_issue" />
+    <bpmn:sequenceFlow id="flow_review_reject" name="拒绝" sourceRef="gateway_review_issue" targetRef="task_create_event" />
+    <bpmn:sequenceFlow id="flow_review_approve" name="批准" sourceRef="gateway_review_issue" targetRef="gateway_approve_issue" />
+    <bpmn:sequenceFlow id="flow_approve_reject" name="拒绝" sourceRef="gateway_approve_issue" targetRef="gateway_review_issue" />
+    <bpmn:sequenceFlow id="flow_approve_pass" name="批准" sourceRef="gateway_approve_issue" targetRef="event_after_approval" />
+    <bpmn:sequenceFlow id="flow_after_to_notify" sourceRef="event_after_approval" targetRef="task_notify_ceo" />
+    <bpmn:sequenceFlow id="flow_notify_to_receive" sourceRef="task_notify_ceo" targetRef="event_receive_approval" />
+    <bpmn:sequenceFlow id="flow_receive_to_match" sourceRef="event_receive_approval" targetRef="task_match_person" />
+    <bpmn:sequenceFlow id="flow_match_to_dispatch" sourceRef="task_match_person" targetRef="task_dispatch_ticket" />
+    <bpmn:sequenceFlow id="flow_dispatch_to_merge" sourceRef="task_dispatch_ticket" targetRef="gateway_merge_director" />
+    <bpmn:sequenceFlow id="flow_merge_to_end" sourceRef="gateway_merge_director" targetRef="end_fast_solution" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_definitions_crm_voc" name="BPMNDiagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_definitions_crm_voc" bpmnElement="collaboration_crm">
+      <bpmndi:BPMNShape id="collaboration_crm_di" bpmnElement="collaboration_crm">
+        <dc:Bounds x="12" y="12" width="1635" height="1430.3333333333333" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="pool_crm_di" bpmnElement="pool_crm" isHorizontal="true">
+        <dc:Bounds x="0" y="0" width="1623" height="1418.3333333333333" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_sales_support_di" bpmnElement="lane_sales_support" isHorizontal="true">
+        <dc:Bounds x="30" y="0" width="1593" height="802.3333333333333" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="start_voc_di" bpmnElement="start_voc">
+        <dc:Bounds x="146" y="593.3333333333333" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="118.5" y="633.3333333333333" width="91" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_create_event_di" bpmnElement="task_create_event">
+        <dc:Bounds x="438" y="436.6666666666667" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="438" y="436.6666666666667" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_feedback_info_di" bpmnElement="do_feedback_info">
+        <dc:Bounds x="502" y="536.6666666666667" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="590.6666666666667" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_event_form_1_di" bpmnElement="do_event_form_1">
+        <dc:Bounds x="502" y="610.6666666666667" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="492" y="664.6666666666667" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_info_complete_di" bpmnElement="gateway_info_complete">
+        <dc:Bounds x="558" y="542.6666666666667" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="527" y="524.6666666666667" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_supplement_info_di" bpmnElement="task_supplement_info">
+        <dc:Bounds x="760" y="480.3333333333333" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="760" y="480.3333333333333" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_supplement_info_di" bpmnElement="do_supplement_info">
+        <dc:Bounds x="824" y="580.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="814" y="634.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_event_form_2_di" bpmnElement="do_event_form_2">
+        <dc:Bounds x="824" y="654.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="814" y="708.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_split_create_issue_di" bpmnElement="task_split_create_issue">
+        <dc:Bounds x="785" y="124.33333333333331" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="785" y="124.33333333333331" width="175" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="di_event_form_di" bpmnElement="di_event_form">
+        <dc:Bounds x="785" y="224.33333333333331" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="775" y="278.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_issue_ticket_1_di" bpmnElement="do_issue_ticket_1">
+        <dc:Bounds x="849" y="224.33333333333331" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="839" y="278.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_related_info_di" bpmnElement="do_related_info">
+        <dc:Bounds x="849" y="298.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="839" y="352.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_issue_ticket_2_di" bpmnElement="do_issue_ticket_2">
+        <dc:Bounds x="849" y="372.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="839" y="426.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_auto_relate_di" bpmnElement="task_auto_relate">
+        <dc:Bounds x="980" y="252.33333333333331" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="980" y="252.33333333333331" width="200" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_classify_level_di" bpmnElement="task_classify_level">
+        <dc:Bounds x="1200" y="117.66666666666669" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1200" y="117.66666666666669" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_issue_ticket_3_di" bpmnElement="do_issue_ticket_3">
+        <dc:Bounds x="1264" y="217.66666666666669" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1254" y="271.6666666666667" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_initial_conclusion_di" bpmnElement="do_initial_conclusion">
+        <dc:Bounds x="1264" y="291.6666666666667" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1254" y="345.6666666666667" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_approval_confirm_di" bpmnElement="task_approval_confirm">
+        <dc:Bounds x="125" y="60" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="125" y="60" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_sales_director_di" bpmnElement="lane_sales_director" isHorizontal="true">
+        <dc:Bounds x="30" y="802.3333333333333" width="1593" height="308" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_review_issue_di" bpmnElement="gateway_review_issue">
+        <dc:Bounds x="257" y="939.6666666666666" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="236.5" y="921.6666666666666" width="91" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="event_receive_approval_di" bpmnElement="event_receive_approval">
+        <dc:Bounds x="1019" y="938.3333333333333" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="956.5" y="978.3333333333333" width="161" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_match_person_di" bpmnElement="task_match_person">
+        <dc:Bounds x="1206" y="862.3333333333333" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1206" y="862.3333333333333" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="di_skill_matrix_di" bpmnElement="di_skill_matrix">
+        <dc:Bounds x="1206" y="962.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1196" y="1016.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_match_result_di" bpmnElement="do_match_result">
+        <dc:Bounds x="1270" y="962.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1246" y="1016.3333333333333" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_dispatch_ticket_di" bpmnElement="task_dispatch_ticket">
+        <dc:Bounds x="1332" y="862.3333333333333" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1332" y="862.3333333333333" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_dispatch_notice_di" bpmnElement="do_dispatch_notice">
+        <dc:Bounds x="1396" y="962.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1386" y="1016.3333333333333" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_merge_director_di" bpmnElement="gateway_merge_director">
+        <dc:Bounds x="1452" y="931.3333333333333" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_fast_solution_di" bpmnElement="end_fast_solution">
+        <dc:Bounds x="1522" y="938.3333333333333" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1484" y="978.3333333333333" width="112" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lane_sales_manager_di" bpmnElement="lane_sales_manager" isHorizontal="true">
+        <dc:Bounds x="30" y="1110.3333333333333" width="1593" height="308" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="gateway_approve_issue_di" bpmnElement="gateway_approve_issue">
+        <dc:Bounds x="447" y="1239.3333333333333" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="426.5" y="1221.3333333333333" width="91" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="event_after_approval_di" bpmnElement="event_after_approval">
+        <dc:Bounds x="697" y="1246.3333333333333" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_notify_ceo_di" bpmnElement="task_notify_ceo">
+        <dc:Bounds x="760" y="1170.3333333333333" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="760" y="1170.3333333333333" width="200" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="do_email_di" bpmnElement="do_email">
+        <dc:Bounds x="824" y="1270.3333333333333" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="824" y="1324.3333333333333" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="do_feedback_info_assoc_di" bpmnElement="do_feedback_info_assoc">
+        <di:waypoint x="520" y="516.6666666666667" />
+        <di:waypoint x="520" y="536.6666666666667" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_supplement_info_assoc_di" bpmnElement="do_supplement_info_assoc">
+        <di:waypoint x="842" y="560.3333333333333" />
+        <di:waypoint x="842" y="580.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="di_event_form_assoc_di" bpmnElement="di_event_form_assoc">
+        <di:waypoint x="803" y="224.33333333333331" />
+        <di:waypoint x="803" y="204.33333333333331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_issue_ticket_1_assoc_di" bpmnElement="do_issue_ticket_1_assoc">
+        <di:waypoint x="867" y="204.33333333333331" />
+        <di:waypoint x="867" y="224.33333333333331" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_issue_ticket_3_assoc_di" bpmnElement="do_issue_ticket_3_assoc">
+        <di:waypoint x="1282" y="197.66666666666669" />
+        <di:waypoint x="1282" y="217.66666666666669" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="di_skill_matrix_assoc_di" bpmnElement="di_skill_matrix_assoc">
+        <di:waypoint x="1224" y="962.3333333333333" />
+        <di:waypoint x="1224" y="942.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_match_result_assoc_di" bpmnElement="do_match_result_assoc">
+        <di:waypoint x="1288" y="942.3333333333333" />
+        <di:waypoint x="1288" y="962.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_dispatch_notice_assoc_di" bpmnElement="do_dispatch_notice_assoc">
+        <di:waypoint x="1414" y="942.3333333333333" />
+        <di:waypoint x="1414" y="962.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="do_email_assoc_di" bpmnElement="do_email_assoc">
+        <di:waypoint x="842" y="1250.3333333333333" />
+        <di:waypoint x="842" y="1270.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_start_to_create_di" bpmnElement="flow_start_to_create">
+        <di:waypoint x="182" y="611.3333333333333" />
+        <di:waypoint x="310" y="611.3333333333333" />
+        <di:waypoint x="310" y="476.6666666666667" />
+        <di:waypoint x="438" y="476.6666666666667" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_create_to_gateway_di" bpmnElement="flow_create_to_gateway">
+        <di:waypoint x="538" y="476.6666666666667" />
+        <di:waypoint x="543" y="476.6666666666667" />
+        <di:waypoint x="543" y="567.6666666666667" />
+        <di:waypoint x="558" y="567.6666666666667" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_gateway_no_di" bpmnElement="flow_gateway_no">
+        <di:waypoint x="608" y="567.6666666666667" />
+        <di:waypoint x="684" y="567.6666666666667" />
+        <di:waypoint x="684" y="520.3333333333333" />
+        <di:waypoint x="760" y="520.3333333333333" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="621" y="572.6666666666667" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_supplement_to_gateway_di" bpmnElement="flow_supplement_to_gateway">
+        <di:waypoint x="760" y="520.3333333333333" />
+        <di:waypoint x="684" y="520.3333333333333" />
+        <di:waypoint x="684" y="567.6666666666667" />
+        <di:waypoint x="608" y="567.6666666666667" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_gateway_yes_di" bpmnElement="flow_gateway_yes">
+        <di:waypoint x="608" y="567.6666666666667" />
+        <di:waypoint x="696.5" y="567.6666666666667" />
+        <di:waypoint x="696.5" y="164.33333333333331" />
+        <di:waypoint x="785" y="164.33333333333331" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="641.5" y="359" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_split_to_relate_di" bpmnElement="flow_split_to_relate">
+        <di:waypoint x="885" y="164.33333333333331" />
+        <di:waypoint x="965" y="164.33333333333331" />
+        <di:waypoint x="965" y="292.3333333333333" />
+        <di:waypoint x="980" y="292.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_relate_to_classify_di" bpmnElement="flow_relate_to_classify">
+        <di:waypoint x="1080" y="292.3333333333333" />
+        <di:waypoint x="1140" y="292.3333333333333" />
+        <di:waypoint x="1140" y="157.66666666666669" />
+        <di:waypoint x="1200" y="157.66666666666669" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_classify_to_approval_di" bpmnElement="flow_classify_to_approval">
+        <di:waypoint x="1200" y="157.66666666666669" />
+        <di:waypoint x="900" y="157.66666666666669" />
+        <di:waypoint x="900" y="100" />
+        <di:waypoint x="225" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_approval_to_review_di" bpmnElement="flow_approval_to_review">
+        <di:waypoint x="225" y="100" />
+        <di:waypoint x="241" y="100" />
+        <di:waypoint x="241" y="964.6666666666666" />
+        <di:waypoint x="257" y="964.6666666666666" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_review_reject_di" bpmnElement="flow_review_reject">
+        <di:waypoint x="307" y="964.6666666666666" />
+        <di:waypoint x="372.5" y="964.6666666666666" />
+        <di:waypoint x="372.5" y="476.6666666666667" />
+        <di:waypoint x="438" y="476.6666666666667" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="317.5" y="713.6666666666666" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_review_approve_di" bpmnElement="flow_review_approve">
+        <di:waypoint x="307" y="964.6666666666666" />
+        <di:waypoint x="377" y="964.6666666666666" />
+        <di:waypoint x="377" y="1264.3333333333333" />
+        <di:waypoint x="447" y="1264.3333333333333" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="322" y="1107.5" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_approve_reject_di" bpmnElement="flow_approve_reject">
+        <di:waypoint x="447" y="1264.3333333333333" />
+        <di:waypoint x="377" y="1264.3333333333333" />
+        <di:waypoint x="377" y="964.6666666666666" />
+        <di:waypoint x="307" y="964.6666666666666" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="322" y="1127.5" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_approve_pass_di" bpmnElement="flow_approve_pass">
+        <di:waypoint x="497" y="1264.3333333333333" />
+        <di:waypoint x="697" y="1264.3333333333333" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="572" y="1269.3333333333333" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_after_to_notify_di" bpmnElement="flow_after_to_notify">
+        <di:waypoint x="733" y="1264.3333333333333" />
+        <di:waypoint x="745" y="1264.3333333333333" />
+        <di:waypoint x="745" y="1210.3333333333333" />
+        <di:waypoint x="760" y="1210.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_notify_to_receive_di" bpmnElement="flow_notify_to_receive">
+        <di:waypoint x="860" y="1210.3333333333333" />
+        <di:waypoint x="939.5" y="1210.3333333333333" />
+        <di:waypoint x="939.5" y="956.3333333333333" />
+        <di:waypoint x="1019" y="956.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_receive_to_match_di" bpmnElement="flow_receive_to_match">
+        <di:waypoint x="1055" y="956.3333333333333" />
+        <di:waypoint x="1191" y="956.3333333333333" />
+        <di:waypoint x="1191" y="902.3333333333333" />
+        <di:waypoint x="1206" y="902.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_match_to_dispatch_di" bpmnElement="flow_match_to_dispatch">
+        <di:waypoint x="1306" y="902.3333333333333" />
+        <di:waypoint x="1332" y="902.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_dispatch_to_merge_di" bpmnElement="flow_dispatch_to_merge">
+        <di:waypoint x="1432" y="902.3333333333333" />
+        <di:waypoint x="1437" y="902.3333333333333" />
+        <di:waypoint x="1437" y="956.3333333333333" />
+        <di:waypoint x="1452" y="956.3333333333333" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_merge_to_end_di" bpmnElement="flow_merge_to_end">
+        <di:waypoint x="1502" y="956.3333333333333" />
+        <di:waypoint x="1522" y="956.3333333333333" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

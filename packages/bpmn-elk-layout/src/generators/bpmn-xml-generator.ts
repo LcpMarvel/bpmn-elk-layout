@@ -14,6 +14,7 @@ import type {
   ArtifactModel,
   ShapeModel,
   EdgeModel,
+  IoSpecificationModel,
 } from '../transform/model-builder';
 import type { LaneSetInfo, LaneInfo } from '../transform/lane-resolver';
 import { BPMN_ELEMENT_MAP, EVENT_DEFINITION_MAP } from '../types/bpmn-constants';
@@ -274,6 +275,10 @@ export class BpmnXmlGenerator {
     // Tasks
     if (element.type.includes('Task') || element.type === 'task') {
       this.applyTaskProperties(bpmnElement, props);
+      // Add ioSpecification if present
+      if (element.ioSpecification) {
+        bpmnElement.ioSpecification = this.buildIoSpecification(element.ioSpecification);
+      }
     }
 
     // Gateways
@@ -503,6 +508,65 @@ export class BpmnXmlGenerator {
         body: condExpr.body,
       });
     }
+  }
+
+  /**
+   * Build ioSpecification element
+   */
+  private buildIoSpecification(ioSpec: IoSpecificationModel): ModdleElement {
+    const ioSpecElement = this.moddle.create('bpmn:InputOutputSpecification', {});
+
+    // Build dataInputs
+    if (ioSpec.dataInputs.length > 0) {
+      ioSpecElement.dataInputs = ioSpec.dataInputs.map((di) => {
+        return this.moddle.create('bpmn:DataInput', {
+          id: di.id,
+          name: di.name,
+          isCollection: di.isCollection,
+        });
+      });
+    }
+
+    // Build dataOutputs
+    if (ioSpec.dataOutputs.length > 0) {
+      ioSpecElement.dataOutputs = ioSpec.dataOutputs.map((dout) => {
+        return this.moddle.create('bpmn:DataOutput', {
+          id: dout.id,
+          name: dout.name,
+          isCollection: dout.isCollection,
+        });
+      });
+    }
+
+    // Build inputSets
+    if (ioSpec.inputSets.length > 0) {
+      ioSpecElement.inputSets = ioSpec.inputSets.map((is) => {
+        const inputSet = this.moddle.create('bpmn:InputSet', {
+          id: is.id,
+          name: is.name,
+        });
+        if (is.dataInputRefs.length > 0) {
+          inputSet.dataInputRefs = is.dataInputRefs.map((ref) => ({ id: ref }));
+        }
+        return inputSet;
+      });
+    }
+
+    // Build outputSets
+    if (ioSpec.outputSets.length > 0) {
+      ioSpecElement.outputSets = ioSpec.outputSets.map((os) => {
+        const outputSet = this.moddle.create('bpmn:OutputSet', {
+          id: os.id,
+          name: os.name,
+        });
+        if (os.dataOutputRefs.length > 0) {
+          outputSet.dataOutputRefs = os.dataOutputRefs.map((ref) => ({ id: ref }));
+        }
+        return outputSet;
+      });
+    }
+
+    return ioSpecElement;
   }
 
   /**

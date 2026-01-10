@@ -17,7 +17,7 @@
 |------|--------|------|
 | 05 | `05-artifacts.json` | 基础工件 (数据对象、注释) |
 | 06 | `06-artifacts-extended.json` | 扩展工件 (Group、关联方向) |
-| 07 | `07-data-io-specification.json` | 数据IO规范 |
+| 07 | `07-data-io-specification.json` | 任务IO规范 (ioSpecification 可视化) |
 
 ## 📙 循环与多实例 (08-10)
 
@@ -74,7 +74,7 @@
 | 34 | `34-global-task.json` | 全局任务 (GlobalUserTask/ManualTask/ScriptTask/BusinessRuleTask) |
 | 35 | `35-voc-cross-lane.json` | 跨泳道流程 (多泳道、跨泳道连线、空泳道) |
 | 36 | `36-voc-vop-capture-process.json` | VOC/VOP捕获流程 (黑盒池、消息流、多泳道并行分支) |
-| 37 | `37-employee-resignation-flow.json` | 员工离职IT资产与账号处理流程 (6泳道、空泳道、多网关分支、跨泳道连线) |
+| 37 | `37-crm-voice-process.json` | CRM客户服务流程 (3泳道、多边界事件、跨泳道连线、消息事件、独占/包容网关) |
 
 ---
 

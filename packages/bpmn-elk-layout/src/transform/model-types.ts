@@ -85,6 +85,45 @@ export interface FlowElementModel {
   // For data associations (BPMN spec: child elements of activity)
   dataInputAssociations?: DataAssociationModel[];
   dataOutputAssociations?: DataAssociationModel[];
+  // For ioSpecification (BPMN spec: defines task inputs/outputs)
+  ioSpecification?: IoSpecificationModel;
+}
+
+// ============================================================================
+// IoSpecification Types (for task data inputs/outputs)
+// ============================================================================
+
+export interface IoSpecificationModel {
+  dataInputs: DataInputModel[];
+  dataOutputs: DataOutputModel[];
+  inputSets: InputSetModel[];
+  outputSets: OutputSetModel[];
+}
+
+export interface DataInputModel {
+  id: string;
+  name?: string;
+  itemSubjectRef?: string;
+  isCollection?: boolean;
+}
+
+export interface DataOutputModel {
+  id: string;
+  name?: string;
+  itemSubjectRef?: string;
+  isCollection?: boolean;
+}
+
+export interface InputSetModel {
+  id: string;
+  name?: string;
+  dataInputRefs: string[];
+}
+
+export interface OutputSetModel {
+  id: string;
+  name?: string;
+  dataOutputRefs: string[];
 }
 
 export interface ArtifactModel {
@@ -297,6 +336,8 @@ export interface NodePosition {
   y: number;
   width: number;
   height: number;
+  /** Visual height for nodes with ioSpecification (ELK layout height includes extra space for data objects) */
+  visualHeight?: number;
 }
 
 export interface NodeOffset {

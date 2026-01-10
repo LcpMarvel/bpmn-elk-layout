@@ -248,10 +248,10 @@
         <di:waypoint x="474.3333333333333" y="342.66666666666663" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_customer_type_to_internal_di" bpmnElement="flow_customer_type_to_internal">
-        <di:waypoint x="421" y="334.3333333333333" />
-        <di:waypoint x="459.3333333333333" y="334.3333333333333" />
-        <di:waypoint x="459.3333333333333" y="196" />
-        <di:waypoint x="561" y="196" />
+        <di:waypoint x="396" y="309.3333333333333" />
+        <di:waypoint x="396" y="272.66666666666663" />
+        <di:waypoint x="611" y="272.66666666666663" />
+        <di:waypoint x="611" y="236" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_related_to_yes_di" bpmnElement="flow_related_to_yes">
         <di:waypoint x="524.3333333333333" y="342.66666666666663" />
@@ -260,10 +260,10 @@
         <di:waypoint x="594.3333333333333" y="351" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_related_to_no_di" bpmnElement="flow_related_to_no">
-        <di:waypoint x="524.3333333333333" y="342.66666666666663" />
-        <di:waypoint x="579.3333333333333" y="342.66666666666663" />
-        <di:waypoint x="579.3333333333333" y="259.3333333333333" />
-        <di:waypoint x="681" y="259.3333333333333" />
+        <di:waypoint x="499.3333333333333" y="317.66666666666663" />
+        <di:waypoint x="499.3333333333333" y="308.5" />
+        <di:waypoint x="731" y="308.5" />
+        <di:waypoint x="731" y="299.3333333333333" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow_department_to_yes_di" bpmnElement="flow_department_to_yes">
         <di:waypoint x="644.3333333333333" y="351" />

@@ -6,6 +6,7 @@
  */
 
 import type { LayoutedGraph } from '../types/elk-output';
+import type { IoSpecification } from '../types/elk-bpmn';
 import type {
   DiagramModel,
   ShapeModel,
@@ -106,7 +107,9 @@ export class DiagramBuilder {
       const absoluteX = offsetX + node.x;
       const absoluteY = offsetY + node.y;
       const nodeWidth = node.width ?? 100;
-      const nodeHeight = node.height ?? 80;
+      // Use visual height if available (for nodes with ioSpecification, ELK height includes extra space for data objects)
+      const bpmnAny = node.bpmn as { _visualHeight?: number } | undefined;
+      const nodeHeight = bpmnAny?._visualHeight ?? node.height ?? 80;
 
       // Store node position for edge routing
       // For events, include the label area below the node in the bounds
@@ -118,12 +121,18 @@ export class DiagramBuilder {
         effectiveHeight = nodeHeight + 4 + labelHeight; // 4px gap + label height
       }
 
-      this.nodePositions.set(node.id, {
+      // Store visualHeight when node has ioSpecification (ELK layout uses larger height for spacing)
+      // This is used by buildEdge to adjust edge endpoints to connect to the visual node border
+      const nodePosition: NodePosition = {
         x: absoluteX,
         y: absoluteY,
         width: nodeWidth,
         height: effectiveHeight,
-      });
+      };
+      if (bpmnAny?._visualHeight !== undefined) {
+        nodePosition.visualHeight = bpmnAny._visualHeight;
+      }
+      this.nodePositions.set(node.id, nodePosition);
 
       // Store node BPMN metadata for gateway detection
       if (node.bpmn) {
@@ -134,6 +143,26 @@ export class DiagramBuilder {
       this.nodeOffsets.set(node.id, { x: offsetX, y: offsetY });
 
       shapes.push(this.buildShape(node, offsetX, offsetY));
+
+      // Process ioSpecification dataInput/dataOutput shapes for tasks/activities only
+      // These are visual representations of task inputs/outputs positioned around the task
+      // Skip for process-level ioSpecification (process type should not have visual data shapes)
+      const nodeType = node.bpmn?.type;
+      const isTaskOrActivity = nodeType && (
+        nodeType.includes('Task') ||
+        nodeType === 'task' ||
+        nodeType === 'callActivity' ||
+        nodeType === 'subProcess' ||
+        nodeType === 'transaction' ||
+        nodeType === 'adHocSubProcess'
+      );
+
+      if (isTaskOrActivity) {
+        const ioSpec = (node.bpmn as { ioSpecification?: IoSpecification } | undefined)?.ioSpecification;
+        if (ioSpec) {
+          this.buildIoSpecificationShapes(node, ioSpec, shapes, edges, absoluteX, absoluteY, nodeWidth, nodeHeight);
+        }
+      }
     }
 
     // Calculate offset for children
@@ -258,6 +287,174 @@ export class DiagramBuilder {
   }
 
   /**
+   * Build shapes for ioSpecification dataInputs and dataOutputs
+   * Positions: dataInputs below-left of the task (stacked vertically),
+   *            dataOutputs below-right of the task (stacked vertically)
+   * Only the topmost item in each stack has a dashed association edge to the task
+   */
+  private buildIoSpecificationShapes(
+    node: LayoutedNode,
+    ioSpec: IoSpecification,
+    shapes: ShapeModel[],
+    edges: EdgeModel[],
+    taskX: number,
+    taskY: number,
+    taskWidth: number,
+    taskHeight: number
+  ): void {
+    // Data object dimensions (same as dataObjectReference)
+    const dataWidth = 36;
+    const dataHeight = 50;
+    const gapBelow = 20; // Gap between task and first data object (vertical)
+    const verticalSpacing = 24; // Spacing between stacked data objects (includes label space)
+    const labelHeight = 14;
+
+    // Position dataInputs below the task, aligned to the left side, stacked vertically
+    const dataInputs = ioSpec.dataInputs ?? [];
+    const inputStartX = taskX; // Start from task's left edge
+
+    dataInputs.forEach((dataInput, index) => {
+      const inputId = dataInput.id ?? `${node.id}_input_${index}`;
+      const inputX = inputStartX;
+      const inputY = taskY + taskHeight + gapBelow + index * (dataHeight + verticalSpacing);
+
+      // Store position for edge routing
+      this.nodePositions.set(inputId, {
+        x: inputX,
+        y: inputY,
+        width: dataWidth,
+        height: dataHeight,
+      });
+
+      const shape: ShapeModel = {
+        id: `${inputId}_di`,
+        bpmnElement: inputId,
+        bounds: {
+          x: inputX,
+          y: inputY,
+          width: dataWidth,
+          height: dataHeight,
+        },
+      };
+
+      // Add label below the data object
+      if (dataInput.name) {
+        const labelWidth = Math.max(dataWidth, this.estimateTextWidth(dataInput.name));
+        shape.label = {
+          bounds: {
+            x: inputX + (dataWidth - labelWidth) / 2,
+            y: inputY + dataHeight + 4,
+            width: labelWidth,
+            height: labelHeight,
+          },
+        };
+      }
+
+      shapes.push(shape);
+
+      // Only the first (topmost) dataInput gets an edge to the task
+      if (index === 0) {
+        // Create dashed edge from dataInput to task (arrow pointing to task)
+        // bpmnElement references the auto-generated dataInputAssociation
+        const assocId = `${inputId}_assoc`;
+        const inputCenterX = inputX + dataWidth / 2;
+        const inputTopY = inputY;
+        const taskBottomY = taskY + taskHeight;
+
+        // Simple vertical connection from data object top to task bottom
+        edges.push({
+          id: `${assocId}_di`,
+          bpmnElement: assocId,
+          waypoints: [
+            { x: inputCenterX, y: inputTopY },
+            { x: inputCenterX, y: taskBottomY },
+          ],
+        });
+      }
+    });
+
+    // Position dataOutputs below the task, aligned to the right side, stacked vertically
+    const dataOutputs = ioSpec.dataOutputs ?? [];
+    const outputStartX = taskX + taskWidth - dataWidth; // Align to right edge
+
+    dataOutputs.forEach((dataOutput, index) => {
+      const outputId = dataOutput.id ?? `${node.id}_output_${index}`;
+      const outputX = outputStartX;
+      const outputY = taskY + taskHeight + gapBelow + index * (dataHeight + verticalSpacing);
+
+      // Store position for edge routing
+      this.nodePositions.set(outputId, {
+        x: outputX,
+        y: outputY,
+        width: dataWidth,
+        height: dataHeight,
+      });
+
+      const shape: ShapeModel = {
+        id: `${outputId}_di`,
+        bpmnElement: outputId,
+        bounds: {
+          x: outputX,
+          y: outputY,
+          width: dataWidth,
+          height: dataHeight,
+        },
+      };
+
+      // Add label below the data object
+      if (dataOutput.name) {
+        const labelWidth = Math.max(dataWidth, this.estimateTextWidth(dataOutput.name));
+        shape.label = {
+          bounds: {
+            x: outputX + (dataWidth - labelWidth) / 2,
+            y: outputY + dataHeight + 4,
+            width: labelWidth,
+            height: labelHeight,
+          },
+        };
+      }
+
+      shapes.push(shape);
+
+      // Only the first (topmost) dataOutput gets an edge from the task
+      if (index === 0) {
+        // Create dashed edge from task to dataOutput (arrow pointing to dataOutput)
+        // bpmnElement references the auto-generated dataOutputAssociation
+        const assocId = `${outputId}_assoc`;
+        const outputCenterX = outputX + dataWidth / 2;
+        const outputTopY = outputY;
+        const taskBottomY = taskY + taskHeight;
+
+        // Simple vertical connection from task bottom to data object top
+        edges.push({
+          id: `${assocId}_di`,
+          bpmnElement: assocId,
+          waypoints: [
+            { x: outputCenterX, y: taskBottomY },
+            { x: outputCenterX, y: outputTopY },
+          ],
+        });
+      }
+    });
+  }
+
+  /**
+   * Estimate text width for label sizing (simplified)
+   */
+  private estimateTextWidth(text: string): number {
+    let width = 0;
+    for (const char of text) {
+      // CJK characters are wider
+      if (char.charCodeAt(0) > 255) {
+        width += 14;
+      } else {
+        width += 7;
+      }
+    }
+    return Math.max(36, Math.min(width, 150));
+  }
+
+  /**
    * Find node BPMN metadata by id
    */
   private findNodeBpmn(nodeId: string): NodeBpmnInfo | undefined {
@@ -295,6 +492,9 @@ export class DiagramBuilder {
   private buildShape(node: LayoutedNode, offsetX: number = 0, offsetY: number = 0): ShapeModel {
     const absoluteX = offsetX + (node.x ?? 0);
     const absoluteY = offsetY + (node.y ?? 0);
+    // Use visual height if available (for nodes with ioSpecification, ELK height includes extra space)
+    const bpmnAny = node.bpmn as { _visualHeight?: number } | undefined;
+    const visualHeight = bpmnAny?._visualHeight ?? node.height ?? 80;
 
     const shape: ShapeModel = {
       id: `${node.id}_di`,
@@ -303,7 +503,7 @@ export class DiagramBuilder {
         x: absoluteX,
         y: absoluteY,
         width: node.width ?? 100,
-        height: node.height ?? 80,
+        height: visualHeight,
       },
     };
 
@@ -320,7 +520,7 @@ export class DiagramBuilder {
     // Add label positioning for elements that need external labels
     // Priority: use explicit labels data if present, otherwise generate from bpmn.name
     const nodeWidth = node.width ?? 36;
-    const nodeHeight = node.height ?? 36;
+    const nodeHeight = bpmnAny?._visualHeight ?? node.height ?? 36;
     const label = node.labels?.[0];
     const labelText = node.bpmn?.name ?? label?.text ?? '';
 
@@ -500,6 +700,11 @@ export class DiagramBuilder {
           }
         }
       }
+
+      // Adjust endpoints for nodes with ioSpecification (visualHeight)
+      // ELK calculates waypoints based on the enlarged layout height (which includes space for data objects),
+      // but we need to connect to the visual node border, not the layout center
+      this.adjustEndpointsForVisualHeight(waypoints, sourceId, targetId);
     }
 
     // Ensure all waypoint segments are orthogonal (no diagonal lines)
@@ -556,6 +761,88 @@ export class DiagramBuilder {
     }
 
     return edgeModel;
+  }
+
+  /**
+   * Adjust edge endpoints for nodes with ioSpecification (visualHeight)
+   *
+   * When a node has ioSpecification, ELK uses an enlarged height for layout (to make space for data objects).
+   * However, the edge endpoints should connect to the visual node border, not based on the layout height.
+   *
+   * This method adjusts endpoint Y coordinates and also adjusts adjacent waypoints if they were
+   * on the same horizontal line, to maintain horizontal segments without introducing extra bends.
+   */
+  private adjustEndpointsForVisualHeight(
+    waypoints: PointModel[],
+    sourceId?: string,
+    targetId?: string
+  ): void {
+    if (waypoints.length < 2) return;
+
+    const tolerance = 5;
+
+    // Adjust source endpoint if source has visualHeight
+    if (sourceId) {
+      const sourcePos = this.nodePositions.get(sourceId);
+      if (sourcePos?.visualHeight !== undefined) {
+        const firstWp = waypoints[0];
+        const secondWp = waypoints[1];
+        if (firstWp && secondWp) {
+          const nodeRight = sourcePos.x + sourcePos.width;
+          const nodeLeft = sourcePos.x;
+          const visualBottom = sourcePos.y + sourcePos.visualHeight;
+          const visualCenterY = sourcePos.y + sourcePos.visualHeight / 2;
+
+          // Check if leaving from left or right side (horizontal connection)
+          if (Math.abs(firstWp.x - nodeRight) < tolerance || Math.abs(firstWp.x - nodeLeft) < tolerance) {
+            const oldY = firstWp.y;
+            const newY = visualCenterY;
+            // Horizontal exit - adjust Y to visual center
+            firstWp.y = newY;
+            // If second waypoint was on the same horizontal line, adjust it too to maintain horizontal segment
+            // BUT only if second waypoint is NOT the last waypoint (i.e., not connecting directly to target)
+            if (Math.abs(secondWp.y - oldY) < tolerance && waypoints.length > 2) {
+              secondWp.y = newY;
+            }
+          } else if (firstWp.y > visualBottom) {
+            // Leaving from below visual bottom - clamp to visual bottom
+            firstWp.y = visualBottom;
+          }
+        }
+      }
+    }
+
+    // Adjust target endpoint if target has visualHeight
+    if (targetId) {
+      const targetPos = this.nodePositions.get(targetId);
+      if (targetPos?.visualHeight !== undefined) {
+        const lastIdx = waypoints.length - 1;
+        const lastWp = waypoints[lastIdx];
+        const prevWp = waypoints[lastIdx - 1];
+        if (lastWp && prevWp) {
+          const nodeLeft = targetPos.x;
+          const nodeRight = targetPos.x + targetPos.width;
+          const visualBottom = targetPos.y + targetPos.visualHeight;
+          const visualCenterY = targetPos.y + targetPos.visualHeight / 2;
+
+          // Check if entering from left or right side (horizontal connection)
+          if (Math.abs(lastWp.x - nodeLeft) < tolerance || Math.abs(lastWp.x - nodeRight) < tolerance) {
+            const oldY = lastWp.y;
+            const newY = visualCenterY;
+            // Horizontal entry - adjust Y to visual center
+            lastWp.y = newY;
+            // If previous waypoint was on the same horizontal line, adjust it too to maintain horizontal segment
+            // BUT only if previous waypoint is NOT the first waypoint (i.e., not connecting directly from source)
+            if (Math.abs(prevWp.y - oldY) < tolerance && waypoints.length > 2) {
+              prevWp.y = newY;
+            }
+          } else if (lastWp.y > visualBottom) {
+            // Entering from below visual bottom - clamp to visual bottom
+            lastWp.y = visualBottom;
+          }
+        }
+      }
+    }
   }
 
   /**

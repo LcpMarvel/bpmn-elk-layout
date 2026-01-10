@@ -11,8 +11,6 @@ describe('ArtifactPositioner', () => {
       expect(ARTIFACT_TYPES.has('dataObject')).toBe(true);
       expect(ARTIFACT_TYPES.has('dataObjectReference')).toBe(true);
       expect(ARTIFACT_TYPES.has('dataStoreReference')).toBe(true);
-      expect(ARTIFACT_TYPES.has('dataInput')).toBe(true);
-      expect(ARTIFACT_TYPES.has('dataOutput')).toBe(true);
       expect(ARTIFACT_TYPES.has('textAnnotation')).toBe(true);
     });
 
@@ -20,6 +18,9 @@ describe('ArtifactPositioner', () => {
       expect(ARTIFACT_TYPES.has('task')).toBe(false);
       expect(ARTIFACT_TYPES.has('startEvent')).toBe(false);
       expect(ARTIFACT_TYPES.has('gateway')).toBe(false);
+      // dataInput/dataOutput are not artifacts - they belong to ioSpecification
+      expect(ARTIFACT_TYPES.has('dataInput')).toBe(false);
+      expect(ARTIFACT_TYPES.has('dataOutput')).toBe(false);
     });
   });
 

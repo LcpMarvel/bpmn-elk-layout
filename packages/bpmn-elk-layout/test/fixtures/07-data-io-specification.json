@@ -16,29 +16,14 @@
       "id": "process_data_io",
       "bpmn": {
         "type": "process",
-        "name": "数据IO规范测试",
-        "isExecutable": true,
-        "ioSpecification": {
-          "dataInputs": [
-            { "id": "process_input_order", "name": "订单数据" },
-            { "id": "process_input_customer", "name": "客户信息" }
-          ],
-          "dataOutputs": [
-            { "id": "process_output_result", "name": "处理结果" },
-            { "id": "process_output_report", "name": "处理报告" }
-          ],
-          "inputSets": [
-            { "id": "input_set_1", "name": "标准输入集", "dataInputRefs": ["process_input_order", "process_input_customer"] }
-          ],
-          "outputSets": [
-            { "id": "output_set_1", "name": "标准输出集", "dataOutputRefs": ["process_output_result", "process_output_report"] }
-          ]
-        }
+        "name": "任务IO规范测试",
+        "isExecutable": true
       },
       "children": [
         {
           "id": "start_1",
-          "width": 36, "height": 36,
+          "width": 36,
+          "height": 36,
           "bpmn": {
             "type": "startEvent",
             "eventDefinitionType": "none",
@@ -47,149 +32,76 @@
           "labels": [{ "text": "开始" }]
         },
         {
-          "id": "data_input_order",
-          "width": 36, "height": 50,
+          "id": "task_create_event",
+          "width": 100,
+          "height": 80,
           "bpmn": {
-            "type": "dataObjectReference",
-            "name": "订单数据",
-            "dataObjectRef": "dataObject_order"
-          },
-          "labels": [{ "text": "订单数据" }]
-        },
-        {
-          "id": "data_input_customer",
-          "width": 36, "height": 50,
-          "bpmn": {
-            "type": "dataObjectReference",
-            "name": "客户信息",
-            "dataObjectRef": "dataObject_customer"
-          },
-          "labels": [{ "text": "客户信息" }]
-        },
-        {
-          "id": "task_validate",
-          "width": 100, "height": 80,
-          "bpmn": {
-            "type": "serviceTask",
-            "name": "验证数据",
+            "type": "userTask",
+            "name": "创建事件",
             "ioSpecification": {
               "dataInputs": [
-                { "id": "task_validate_input_1", "name": "待验证数据" }
+                { "id": "input_feedback", "name": "反馈信息" }
               ],
               "dataOutputs": [
-                { "id": "task_validate_output_1", "name": "验证结果" }
-              ],
-              "inputSets": [
-                { "id": "task_validate_input_set", "dataInputRefs": ["task_validate_input_1"] }
-              ],
-              "outputSets": [
-                { "id": "task_validate_output_set", "dataOutputRefs": ["task_validate_output_1"] }
+                { "id": "output_form", "name": "事件表单" }
               ]
             }
           },
-          "labels": [{ "text": "验证数据" }]
+          "labels": [{ "text": "创建事件" }]
         },
         {
-          "id": "data_validation_result",
-          "width": 36, "height": 50,
+          "id": "gateway_complete",
+          "width": 50,
+          "height": 50,
           "bpmn": {
-            "type": "dataObjectReference",
-            "name": "验证结果",
-            "dataObjectRef": "dataObject_validation"
+            "type": "exclusiveGateway",
+            "name": "信息是否完整",
+            "gatewayDirection": "Diverging"
           },
-          "labels": [{ "text": "验证结果" }]
+          "labels": [{ "text": "信息是否完整" }]
+        },
+        {
+          "id": "task_supplement",
+          "width": 100,
+          "height": 80,
+          "bpmn": {
+            "type": "userTask",
+            "name": "补充信息",
+            "ioSpecification": {
+              "dataInputs": [
+                { "id": "input_original", "name": "原始表单" },
+                { "id": "input_extra", "name": "补充资料" }
+              ],
+              "dataOutputs": [
+                { "id": "output_updated", "name": "更新表单" }
+              ]
+            }
+          },
+          "labels": [{ "text": "补充信息" }]
         },
         {
           "id": "task_process",
-          "width": 100, "height": 80,
+          "width": 100,
+          "height": 80,
           "bpmn": {
             "type": "serviceTask",
-            "name": "处理订单",
+            "name": "处理事件",
             "ioSpecification": {
               "dataInputs": [
-                { "id": "task_process_input_1", "name": "订单" },
-                { "id": "task_process_input_2", "name": "客户" }
+                { "id": "input_event_form", "name": "事件表单" }
               ],
               "dataOutputs": [
-                { "id": "task_process_output_1", "name": "处理后订单" }
-              ],
-              "inputSets": [
-                { "id": "task_process_input_set", "dataInputRefs": ["task_process_input_1", "task_process_input_2"] }
-              ],
-              "outputSets": [
-                { "id": "task_process_output_set", "dataOutputRefs": ["task_process_output_1"] }
+                { "id": "output_result", "name": "处理结果" },
+                { "id": "output_log", "name": "处理日志" }
               ]
             }
           },
-          "labels": [{ "text": "处理订单" }]
-        },
-        {
-          "id": "data_processed_order",
-          "width": 36, "height": 50,
-          "bpmn": {
-            "type": "dataObjectReference",
-            "name": "已处理订单",
-            "dataObjectRef": "dataObject_processed",
-            "dataState": {
-              "name": "已处理"
-            }
-          },
-          "labels": [{ "text": "已处理订单" }]
-        },
-        {
-          "id": "task_generate_report",
-          "width": 100, "height": 80,
-          "bpmn": {
-            "type": "serviceTask",
-            "name": "生成报告",
-            "ioSpecification": {
-              "dataInputs": [
-                { "id": "task_report_input_1", "name": "订单数据" }
-              ],
-              "dataOutputs": [
-                { "id": "task_report_output_1", "name": "报告" }
-              ],
-              "inputSets": [
-                { "id": "task_report_input_set", "dataInputRefs": ["task_report_input_1"] }
-              ],
-              "outputSets": [
-                { "id": "task_report_output_set", "dataOutputRefs": ["task_report_output_1"] }
-              ]
-            }
-          },
-          "labels": [{ "text": "生成报告" }]
-        },
-        {
-          "id": "data_store_orders",
-          "width": 50, "height": 50,
-          "bpmn": {
-            "type": "dataStoreReference",
-            "name": "订单数据库"
-          },
-          "labels": [{ "text": "订单数据库" }]
-        },
-        {
-          "id": "data_output_report",
-          "width": 36, "height": 50,
-          "bpmn": {
-            "type": "dataObjectReference",
-            "name": "处理报告",
-            "dataObjectRef": "dataObject_report"
-          },
-          "labels": [{ "text": "处理报告" }]
-        },
-        {
-          "id": "task_notify",
-          "width": 100, "height": 80,
-          "bpmn": {
-            "type": "sendTask",
-            "name": "发送通知"
-          },
-          "labels": [{ "text": "发送通知" }]
+          "labels": [{ "text": "处理事件" }]
         },
         {
           "id": "end_1",
-          "width": 36, "height": 36,
+          "width": 36,
+          "height": 36,
           "bpmn": {
             "type": "endEvent",
             "eventDefinitionType": "none",
@@ -199,73 +111,51 @@
         }
       ],
       "edges": [
-        { "id": "flow_1", "sources": ["start_1"], "targets": ["task_validate"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "flow_2", "sources": ["task_validate"], "targets": ["task_process"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "flow_3", "sources": ["task_process"], "targets": ["task_generate_report"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "flow_4", "sources": ["task_generate_report"], "targets": ["task_notify"], "bpmn": { "type": "sequenceFlow" } },
-        { "id": "flow_5", "sources": ["task_notify"], "targets": ["end_1"], "bpmn": { "type": "sequenceFlow" } },
         {
-          "id": "data_assoc_order_to_validate",
-          "sources": ["data_input_order"],
-          "targets": ["task_validate"],
-          "bpmn": { "type": "dataInputAssociation" }
+          "id": "flow_1",
+          "sources": ["start_1"],
+          "targets": ["task_create_event"],
+          "bpmn": { "type": "sequenceFlow" }
         },
         {
-          "id": "data_assoc_customer_to_process",
-          "sources": ["data_input_customer"],
+          "id": "flow_2",
+          "sources": ["task_create_event"],
+          "targets": ["gateway_complete"],
+          "bpmn": { "type": "sequenceFlow" }
+        },
+        {
+          "id": "flow_3_no",
+          "sources": ["gateway_complete"],
+          "targets": ["task_supplement"],
+          "bpmn": {
+            "type": "sequenceFlow",
+            "name": "否"
+          },
+          "labels": [{ "text": "否" }]
+        },
+        {
+          "id": "flow_4",
+          "sources": ["task_supplement"],
           "targets": ["task_process"],
-          "bpmn": { "type": "dataInputAssociation" }
+          "bpmn": { "type": "sequenceFlow" }
         },
         {
-          "id": "data_assoc_validate_to_result",
-          "sources": ["task_validate"],
-          "targets": ["data_validation_result"],
-          "bpmn": { "type": "dataOutputAssociation" }
-        },
-        {
-          "id": "data_assoc_result_to_process",
-          "sources": ["data_validation_result"],
+          "id": "flow_5_yes",
+          "sources": ["gateway_complete"],
           "targets": ["task_process"],
-          "bpmn": { "type": "dataInputAssociation" }
+          "bpmn": {
+            "type": "sequenceFlow",
+            "name": "是"
+          },
+          "labels": [{ "text": "是" }]
         },
         {
-          "id": "data_assoc_process_to_order",
+          "id": "flow_6",
           "sources": ["task_process"],
-          "targets": ["data_processed_order"],
-          "bpmn": { "type": "dataOutputAssociation" }
-        },
-        {
-          "id": "data_assoc_order_to_report",
-          "sources": ["data_processed_order"],
-          "targets": ["task_generate_report"],
-          "bpmn": { "type": "dataInputAssociation" }
-        },
-        {
-          "id": "data_assoc_process_to_store",
-          "sources": ["task_process"],
-          "targets": ["data_store_orders"],
-          "bpmn": { "type": "dataOutputAssociation" }
-        },
-        {
-          "id": "data_assoc_report_to_output",
-          "sources": ["task_generate_report"],
-          "targets": ["data_output_report"],
-          "bpmn": { "type": "dataOutputAssociation" }
-        },
-        {
-          "id": "data_assoc_report_to_notify",
-          "sources": ["data_output_report"],
-          "targets": ["task_notify"],
-          "bpmn": { "type": "dataInputAssociation" }
+          "targets": ["end_1"],
+          "bpmn": { "type": "sequenceFlow" }
         }
       ]
     }
-  ],
-  "dataObjects": [
-    { "id": "dataObject_order", "name": "订单" },
-    { "id": "dataObject_customer", "name": "客户" },
-    { "id": "dataObject_validation", "name": "验证结果" },
-    { "id": "dataObject_processed", "name": "已处理订单" },
-    { "id": "dataObject_report", "name": "报告" }
   ]
 }

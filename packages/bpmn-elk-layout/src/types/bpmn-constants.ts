@@ -183,8 +183,6 @@ export const SUBPROCESS_TYPES = [
 export const ARTIFACT_TYPES = [
   'dataObject',
   'dataObjectReference',
-  'dataInput',
-  'dataOutput',
   'dataStoreReference',
   'textAnnotation',
   'group',
@@ -203,8 +201,6 @@ export const ARTIFACT_TYPES_SET = new Set([
   'dataObject',
   'dataObjectReference',
   'dataStoreReference',
-  'dataInput',
-  'dataOutput',
   'textAnnotation',
 ]);
 

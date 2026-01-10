@@ -56,14 +56,23 @@
   },
 
   "definitions": {
-    
     "layoutOptions": {
       "type": "object",
       "description": "ELK 布局配置选项",
       "properties": {
         "elk.algorithm": {
           "type": "string",
-          "enum": ["layered", "stress", "mrtree", "radial", "force", "disco", "box", "fixed", "random"],
+          "enum": [
+            "layered",
+            "stress",
+            "mrtree",
+            "radial",
+            "force",
+            "disco",
+            "box",
+            "fixed",
+            "random"
+          ],
           "default": "layered"
         },
         "elk.direction": {
@@ -74,9 +83,18 @@
         "elk.spacing.nodeNode": { "type": "number", "default": 50 },
         "elk.spacing.edgeNode": { "type": "number", "default": 30 },
         "elk.spacing.edgeEdge": { "type": "number", "default": 20 },
-        "elk.layered.spacing.nodeNodeBetweenLayers": { "type": "number", "default": 80 },
-        "elk.layered.spacing.edgeNodeBetweenLayers": { "type": "number", "default": 30 },
-        "elk.layered.spacing.edgeEdgeBetweenLayers": { "type": "number", "default": 20 },
+        "elk.layered.spacing.nodeNodeBetweenLayers": {
+          "type": "number",
+          "default": 80
+        },
+        "elk.layered.spacing.edgeNodeBetweenLayers": {
+          "type": "number",
+          "default": 30
+        },
+        "elk.layered.spacing.edgeEdgeBetweenLayers": {
+          "type": "number",
+          "default": 20
+        },
         "elk.partitioning.activate": { "type": "boolean" },
         "elk.hierarchyHandling": {
           "type": "string",
@@ -89,7 +107,12 @@
         },
         "elk.layered.nodePlacement.strategy": {
           "type": "string",
-          "enum": ["SIMPLE", "BRANDES_KOEPF", "LINEAR_SEGMENTS", "NETWORK_SIMPLEX"]
+          "enum": [
+            "SIMPLE",
+            "BRANDES_KOEPF",
+            "LINEAR_SEGMENTS",
+            "NETWORK_SIMPLEX"
+          ]
         },
         "elk.edgeRouting": {
           "type": "string",
@@ -179,7 +202,7 @@
           "properties": {
             "type": { "const": "participant" },
             "name": { "type": "string" },
-            "processRef": { 
+            "processRef": {
               "type": "string",
               "description": "关联的 Process ID"
             },
@@ -450,7 +473,18 @@
             "type": { "const": "boundaryEvent" },
             "eventDefinitionType": {
               "type": "string",
-              "enum": ["message", "timer", "error", "escalation", "cancel", "compensation", "conditional", "signal", "multiple", "parallelMultiple"]
+              "enum": [
+                "message",
+                "timer",
+                "error",
+                "escalation",
+                "cancel",
+                "compensation",
+                "conditional",
+                "signal",
+                "multiple",
+                "parallelMultiple"
+              ]
             },
             "name": { "type": "string" },
             "isInterrupting": { "type": "boolean", "default": true },
@@ -459,13 +493,20 @@
             "signalRef": { "type": "string" },
             "errorRef": { "type": "string" },
             "escalationRef": { "type": "string" },
-            "timerEventDefinition": { "$ref": "#/definitions/timerEventDefinition" },
-            "conditionalEventDefinition": { "$ref": "#/definitions/conditionalEventDefinition" }
+            "timerEventDefinition": {
+              "$ref": "#/definitions/timerEventDefinition"
+            },
+            "conditionalEventDefinition": {
+              "$ref": "#/definitions/conditionalEventDefinition"
+            }
           }
         },
         "labels": {
           "type": "array",
-          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+          "items": {
+            "type": "object",
+            "properties": { "text": { "type": "string" } }
+          }
         }
       }
     },
@@ -562,7 +603,10 @@
           "type": "object",
           "description": "脚本任务配置",
           "properties": {
-            "scriptFormat": { "type": "string", "description": "脚本语言，如 javascript, groovy" },
+            "scriptFormat": {
+              "type": "string",
+              "description": "脚本语言，如 javascript, groovy"
+            },
             "script": { "type": "string", "description": "脚本内容" },
             "resultVariable": { "type": "string", "description": "结果变量名" }
           }
@@ -635,7 +679,12 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["subProcess", "transaction", "adHocSubProcess", "eventSubProcess"]
+          "enum": [
+            "subProcess",
+            "transaction",
+            "adHocSubProcess",
+            "eventSubProcess"
+          ]
         },
         "name": { "type": "string" },
         "triggeredByEvent": {
@@ -856,7 +905,10 @@
         },
         "labels": {
           "type": "array",
-          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+          "items": {
+            "type": "object",
+            "properties": { "text": { "type": "string" } }
+          }
         }
       }
     },
@@ -868,7 +920,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["dataObject", "dataObjectReference", "dataInput", "dataOutput"]
+          "enum": ["dataObject", "dataObjectReference"]
         },
         "name": { "type": "string" },
         "dataObjectRef": { "type": "string" },
@@ -982,7 +1034,10 @@
         },
         "labels": {
           "type": "array",
-          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+          "items": {
+            "type": "object",
+            "properties": { "text": { "type": "string" } }
+          }
         }
       }
     },
@@ -1016,7 +1071,10 @@
         },
         "labels": {
           "type": "array",
-          "items": { "type": "object", "properties": { "text": { "type": "string" } } }
+          "items": {
+            "type": "object",
+            "properties": { "text": { "type": "string" } }
+          }
         }
       }
     },
